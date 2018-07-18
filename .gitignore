@@ -1,0 +1,8 @@
+\.DS_Store
+__pycache__/
+env
+.idea
+
+partners/
+
+ascension\.db
