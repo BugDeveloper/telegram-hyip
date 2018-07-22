@@ -1,16 +1,26 @@
-from time import sleep
+import datetime
 
 from peewee import DoesNotExist
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.error import Unauthorized, BadRequest, TimedOut, NetworkError, ChatMigrated, TelegramError, RetryAfter
+from telegram.error import Unauthorized, BadRequest, TimedOut, NetworkError, ChatMigrated, TelegramError
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CommandHandler, CallbackQueryHandler
-import config
 import lang
 from models import User, Partnership
 from eth_utils import is_address as is_eth_address
 import xlsxwriter
+from ban import Ban
 
 MAIN, WALLET_CHANGE = range(2)
+
+_partners_excel_query_spam_filter = {}
+_commands_spam_filter = {}
+_bans = {}
+
+
+class UserFloodRestrictions:
+    ALLOWED_COMMAND = 30
+    ALLOWED_TIME = 20
+
 
 _MAIN_BUTTONS = {
     'bank': '💰 Мой счет',
@@ -45,53 +55,90 @@ _BACK_KEYBOARD = [
 
 
 def error_callback(bot, update, error):
-    message = update.message
-    chat_id = message.chat_id
-
     try:
         raise error
-    except BadRequest as e:
-        bot.sendMessage(chat_id=chat_id, text='Кажется, вы что-то делаете неправильно.')
-    except RetryAfter as e:
+    except Unauthorized:
+        user = User.get(chat_id=update.message.chat_id)
+        user.delete()
+    except BadRequest:
+        # handle malformed requests - read more below!
         pass
-        # TODO
-    except TimedOut as e:
-        # TODO
-        bot.sendMessage(chat_id=chat_id, text=message)
-    except Unauthorized as e:
+    except TimedOut:
+        bot.send_message()
         pass
-        # TODO
-    except NetworkError as e:
-        # TODO
-        bot.sendMessage(chat_id=chat_id, text=message)
-    except Exception as e:
-        # TODO
-        bot.sendMessage(chat_id=chat_id, text=message)
+    except NetworkError:
+        # handle other connection problems
+        pass
+    except ChatMigrated as e:
+        # the chat_id of a group has changed, use e.new_chat_id instead
+        pass
+    except TelegramError:
+        # handle all other telegram related error
+        pass
 
 
-def _reply(update, text, keyboard=None):
-    update.message.reply_text(text, reply_markup=keyboard)
+def user_is_spamming(chat_id):
+    now = datetime.datetime.now()
+    if chat_id not in _commands_spam_filter:
+        _commands_spam_filter[chat_id] = []
+    _commands_spam_filter[chat_id].append(now)
+
+    updated_filter = [
+        query_time for query_time in _commands_spam_filter[chat_id]
+        if (now - query_time).seconds < UserFloodRestrictions.ALLOWED_TIME
+    ]
+
+    _commands_spam_filter[chat_id] = updated_filter
+
+    if len(updated_filter) > UserFloodRestrictions.ALLOWED_COMMAND:
+        return True
+    return False
+
+
+@run_async
+def notify_ban(bot, user_id, ban_hours):
+    text = 'Поздравляем! Вы были забанены за флуд на кол-во часов: ' + str(ban_hours) + '.'
+    bot.send_message(chat_id=user_id, text=text)
 
 
 def _menu(bot, update, user_data):
-    text = update.message.text
     user_id = update.message.chat_id
+
+    if not _bans.get('user_id', None):
+        _bans['user_id'] = Ban()
+
+    ban = _bans.get('user_id')
+
+    if ban.banned():
+        return MAIN
+
+    if user_is_spamming(user_id):
+        ban_hours = ban.set_banned()
+        notify_ban(bot, user_id, ban_hours)
+        return MAIN
+
     try:
         user = User.get(chat_id=user_id)
     except DoesNotExist as e:
-        _reply(update, lang.not_registered())
+        bot.send_message(user_id, lang.not_registered())
         return MAIN
 
+    text = update.message.text
+
     if text == _MAIN_BUTTONS['bank']:
-        return MainMenu.deposit(update, user)
+        return MainMenu.deposit(bot, user)
     elif text == _MAIN_BUTTONS['top_up']:
-        return MainMenu.top_up(update, user)
+        return MainMenu.top_up(bot, user)
     elif text == _MAIN_BUTTONS['withdraw']:
-        return MainMenu.withdraw(update, user)
+        return MainMenu.withdraw(bot, user)
     elif text == _MAIN_BUTTONS['partners']:
-        return MainMenu.partners(bot, update, user)
+        return MainMenu.partners(bot, user)
     elif text == _MAIN_BUTTONS['transactions']:
-        return MainMenu.transactions(update, user)
+        return MainMenu.transactions(bot, user)
+    elif text == _MAIN_BUTTONS['help']:
+        return MainMenu.help(bot, user)
+    else:
+        return MAIN
 
 
 def _callback(bot, update):
@@ -99,7 +146,16 @@ def _callback(bot, update):
     user_id = query.message.chat_id
     user = User.get(chat_id=user_id)
 
-    if query.data == 'excel':
+    if query.data == 'partners_excel':
+        if user_id in _partners_excel_query_spam_filter:
+            last_query = _partners_excel_query_spam_filter[user_id]
+            now = datetime.datetime.now()
+            seconds_passed = (now - last_query).seconds
+            if seconds_passed < 60:
+                text = 'Нельзя запрашивать excel чаще, чем раз в минуту. Осталось секунд: ' + str(
+                    60 - seconds_passed) + '.'
+                bot.send_message(chat_id=user_id, text=text)
+                return
         PartnersMenu.partners_excel(bot, user)
 
 
@@ -107,11 +163,12 @@ class PartnersMenu:
     @staticmethod
     @run_async
     def partners_excel(bot, user):
+        _partners_excel_query_spam_filter[user.chat_id] = datetime.datetime.now()
         cols = {
             'Телеграм username': 'username',
             'Имя': 'first_name',
             'Фамилия': 'last_name',
-            'Прибыль': 'investments_income',
+            'Прибыль': 'balance',
             'Дата регистрации': 'created_date'
         }
 
@@ -154,57 +211,86 @@ class PartnersMenu:
 class MainMenu:
 
     @staticmethod
-    @run_async
-    def transactions(update, user):
+    def transactions(bot, user):
         top_ups = user.top_ups
         withdrawals = user.withdrawals
-        _reply(update, lang.withdrawals(withdrawals))
-        _reply(update, lang.top_ups(top_ups))
+        text = lang.withdrawals(withdrawals) + '\n' + lang.top_ups(top_ups)
+        bot.send_message(chat_id=user.chat_id, text=text)
         return MAIN
 
     @staticmethod
     @run_async
-    def partners(bot, update, user):
+    def partners(bot, user):
 
         keyboard = [
             [
-                InlineKeyboardButton("Скачать excel таблицу партнёров", callback_data='excel'),
+                InlineKeyboardButton("Скачать excel таблицу партнёров", callback_data='partners_excel'),
             ],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-
-        _reply(update, lang.partners(user.chat_id, user.referral), keyboard=reply_markup)
+        text = lang.partners(user.chat_id, user.referral)
+        bot.send_message(
+            chat_id=user.chat_id,
+            text=text,
+            reply_markup=reply_markup
+        )
         return MAIN
 
     @staticmethod
     @run_async
-    def withdraw(update, user):
+    def withdraw(bot, user):
         if user.wallet:
-            _reply(update, lang.withdraw(user.wallet))
+            text = lang.withdraw(user.wallet)
+            bot.send_message(chat_id=user.chat_id, text=text)
             return MAIN
         else:
-            _reply(update, lang.wallet_not_set())
-            _reply(update, lang.enter_new_wallet(), ReplyKeyboardMarkup(_BACK_KEYBOARD))
+            text = lang.wallet_not_set() + '\n' + lang.enter_new_wallet()
+
+            bot.send_message(
+                chat_id=user.chat_id,
+                text=text,
+                reply_markup=ReplyKeyboardMarkup(_BACK_KEYBOARD)
+            )
             return WALLET_CHANGE
 
     @staticmethod
     @run_async
-    def top_up(update, user):
+    def top_up(bot, user):
         if user.wallet:
-            _reply(update, lang.top_up())
+            text = lang.top_up()
+            bot.send_message(chat_id=user.chat_id, text=text)
             return MAIN
         else:
-            _reply(update, lang.wallet_not_set())
-            _reply(update, lang.enter_new_wallet(), ReplyKeyboardMarkup(_BACK_KEYBOARD))
+            text = lang.wallet_not_set() + '\n' + lang.enter_new_wallet()
+            bot.send_message(
+                chat_id=user.chat_id,
+                text=text,
+                reply_markup=ReplyKeyboardMarkup(_BACK_KEYBOARD)
+            )
             return WALLET_CHANGE
 
     @staticmethod
     @run_async
-    def deposit(update, user):
-        _reply(update, lang.deposit(user.deposit, user.balance, config.get_daily_percentage(), config.get_minimal_deposit()))
+    def deposit(bot, user):
+        text = lang.deposit(user.deposit, user.balance)
+        bot.send_message(
+            chat_id=user.chat_id,
+            text=text
+        )
+        return MAIN
+
+    @staticmethod
+    @run_async
+    def help(bot, user):
+        text = 'Раздел помощи'
+        bot.send_message(
+            chat_id=user.chat_id,
+            text=text
+        )
         return MAIN
 
 
+@run_async
 def _start(bot, update, args):
     chat_id = update.message.chat_id
     try:
@@ -228,23 +314,31 @@ def _start(bot, update, args):
 
         text = update.message.chat.first_name + ', вы были успешно зарегистрированны в системе!'
 
-    _reply(update, text, ReplyKeyboardMarkup(_MAIN_KEYBOARD))
+    bot.send_message(chat_id=user.chat_id, text=text, reply_markup=ReplyKeyboardMarkup(_MAIN_KEYBOARD))
     return MAIN
+
+
+def _wallet_change_command(bot, update):
+    chat_id = update.message.chat_id
+    bot.send_message(chat_id=chat_id, text=lang.enter_new_wallet(), reply_markup=ReplyKeyboardMarkup(_BACK_KEYBOARD))
+    return WALLET_CHANGE
 
 
 def _wallet_change(bot, update):
     wallet = update.message.text
+    chat_id = update.message.chat_id
     if wallet == _MAIN_BUTTONS['back']:
-        _reply(update, lang.back_to_main_menu(), ReplyKeyboardMarkup(_MAIN_KEYBOARD))
+        bot.send_message(chat_id=chat_id, text=lang.back_to_main_menu(),
+                         reply_markup=ReplyKeyboardMarkup(_MAIN_KEYBOARD))
         return MAIN
 
     if not is_eth_address(wallet):
-        _reply(update, lang.invalid_input())
+        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
         return WALLET_CHANGE
 
     try:
         user = User.get(wallet=wallet)
-        _reply(update, lang.eth_address_taken())
+        bot.send_message(chat_id=chat_id, text=lang.eth_address_taken())
         return WALLET_CHANGE
     except DoesNotExist:
         pass
@@ -253,7 +347,10 @@ def _wallet_change(bot, update):
     user = User.get(chat_id=user_id)
     user.wallet = wallet.lower()
     user.save()
-    _reply(update, lang.wallet_successfully_set(wallet), ReplyKeyboardMarkup(_MAIN_KEYBOARD))
+    bot.send_message(
+        chat_id=chat_id,
+        text=lang.wallet_successfully_set(wallet),
+        reply_markup=ReplyKeyboardMarkup(_MAIN_KEYBOARD))
     return MAIN
 
 
@@ -285,6 +382,11 @@ def get_main_menu_handler():
     return main_handler
 
 
-def get_start_handler():
+def get_change_wallet_command_handler():
+    change_wallet_handler = CommandHandler('wallet', _wallet_change_command)
+    return change_wallet_handler
+
+
+def get_start_command_handler():
     start_handler = CommandHandler('start', _start, pass_args=True)
     return start_handler

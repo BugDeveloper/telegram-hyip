@@ -1,22 +1,22 @@
 import config
 
-_BALANCE = 'Ваш депозит: {} ETH. \n\n' \
-           'Ваш баланс: {} ETH. \n\n' \
-           'Процентная ставка: {}% в день.\n\n' \
-           'После пополнения счета, сумма на счете будет расти' \
-           ' в соответствии с установленной процентной ставкой, а также количеством Ваших рефералов.\n\n' \
+_BALANCE = 'Ваш депозит: {} ETH. \n' \
+           'Ваш баланс: {} ETH. \n' \
+           'Процентная ставка: {}% в день.\n' \
            'Для начисления процентов сумма депозита должна быть не менее {} ETH'
 
-_TOP_UP = 'ETH адрес для инвестиций: {}\n\n' \
+
+_TOP_UP = 'ETH адрес для инвестиций: {}\n' \
           'Вы можете переводить на этот адрес любую сумму в любое время с вашего привязанного кошелька. ' \
-          'Средства будут зачислены на Ваш счет в течение часа. Успешных инвестиций!'
+          'Средства будут зачислены на Ваш счет в течение часа.\n' \
+          'Чтобы изменить адрес ETH кошелька для вывода, введите команду /wallet .'
 
 _WALLET_NOT_SET = 'Ваш адрес для вывода не установлен\n'
 
 _WITHDRAW = 'Ваш адрес для вывода: {}.\n' \
-            'Средства будут перечислены на указанный Вами адрес в ближайшее время (обычно в течение часа).\n' \
-            'Чтобы изменить адрес ETH кошелька для вывода, введите /wallet <ваш кошелёк>.\n' \
-            'Для вывода монет введите /withdraw <сумма>.'
+            'Средства будут перечислены на указанный Вами адрес в рассчетный день.\n' \
+            'Чтобы изменить адрес ETH кошелька для вывода, введите команду /wallet .\n' \
+            'Для вывода средств введите /withdraw <сумма>.'
 
 _WALLET_SET = 'ETH кошелёк {} успешно привязанн к вашему аккаунту.'
 
@@ -44,6 +44,9 @@ _NO_WITHDRAWALS = 'У вас пока нет выводов.'
 
 _NOT_REGISTERED = 'Вы не зарегистрированны в системе. Для начала введите команду /start.'
 
+
+# 'После пополнения счета, сумма на счете будет расти' \
+# ' в соответствии с установленной процентной ставкой, а также количеством Ваших рефералов.\n' \
 
 def eth_address_taken():
     return _WALLET_IS_TAKEN
@@ -81,6 +84,13 @@ def partners(user_id, user_invited_by=None):
         partners_info = 'Вы были приглашены пользователем: @{}\n'.format(user_invited_by.username)
     partners_info += _PARTNERS
     referral_link = 'https://telegram.me/' + config.get_bot_username() + '?start=' + str(user_id)
+
+    level_percentage = config.get_referral_levels_percentage()
+    partners_info += 'Реферальные уровни - начисляемые проценты из прибыли партнёров:\n'
+
+    for idx, percentage in enumerate(level_percentage):
+        partners_info += 'Уровень {} - {}%\n'.format(idx + 1, percentage * 100)
+
     return partners_info.format(referral_link)
 
 
@@ -92,8 +102,13 @@ def wallet_successfully_set(wallet):
     return _WALLET_SET.format(wallet)
 
 
-def deposit(user_deposit, user_balance, percent, minimal_deposit):
-    return _BALANCE.format(user_deposit, user_balance, percent, minimal_deposit)
+def deposit(user_deposit, user_balance):
+    return _BALANCE.format(
+        user_deposit,
+        user_balance,
+        config.get_daily_percentage() * 100,
+        config.get_eth_minimal_deposit()
+    )
 
 
 def top_up():

@@ -10,10 +10,10 @@ from telegram.ext import messagequeue as mq
 
 def main():
     token = config.get_token()
-    q = mq.MessageQueue(all_burst_limit=15, all_time_limit_ms=3000)
+    q = mq.MessageQueue(all_burst_limit=29, all_time_limit_ms=1017)
     request = Request(con_pool_size=8)
-    bot = MQBot(token, request=request, mqueue=q)
-    updater = telegram.ext.updater.Updater(bot=bot)
+    bot = MQBot(token=token, request=request, mqueue=q)
+    updater = telegram.ext.updater.Updater(bot=bot, request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
     dispatcher = updater.dispatcher
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -21,8 +21,9 @@ def main():
     )
 
     main_handler = handlers.get_main_menu_handler()
-    start_handler = handlers.get_start_handler()
+    start_handler = handlers.get_start_command_handler()
     change_wallet_handler = handlers.get_change_wallet_handler()
+    change_wallet_command_handler = handlers.get_change_wallet_command_handler()
     callback_query_handler = handlers.get_callback_query_handler()
 
     conv_handler = ConversationHandler(
@@ -33,15 +34,16 @@ def main():
         states={
             handlers.MAIN: [
                 main_handler,
+                change_wallet_command_handler
             ],
             handlers.WALLET_CHANGE: [change_wallet_handler],
         },
         fallbacks=[]
     )
 
-    dispatcher.add_error_handler(handlers.error_callback)
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(callback_query_handler)
+    dispatcher.add_error_handler(handlers.error_callback)
     updater.start_polling()
     updater.idle()
 
