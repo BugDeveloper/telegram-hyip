@@ -5,7 +5,6 @@ _BALANCE = 'Ваш депозит: {} ETH. \n' \
            'Процентная ставка: {}% в день.\n' \
            'Для начисления процентов сумма депозита должна быть не менее {} ETH'
 
-
 _TOP_UP = 'ETH адрес для инвестиций: {}\n' \
           'Вы можете переводить на этот адрес любую сумму в любое время с вашего привязанного кошелька. ' \
           'Средства будут зачислены на Ваш счет в течение часа.\n' \
@@ -60,8 +59,8 @@ def withdrawals(withdrawals_list):
     if len(withdrawals_list) == 0:
         return _NO_WITHDRAWALS
     withdrawals = _WITHDRAWALS
-    for withdrawal, index in withdrawals_list:
-        withdrawals += index + '. ' + withdrawal + '\n'
+    for index, withdrawal in enumerate(withdrawals_list):
+        withdrawals += str(withdrawal.amount) + ' ETH - ' + str(withdrawal.created_at) + '\n'
     return withdrawals
 
 
@@ -69,8 +68,8 @@ def top_ups(top_ups_list):
     if len(top_ups_list) == 0:
         return _NO_TOP_UPS
     top_ups = _TOP_UPS
-    for top_up, index in top_ups_list:
-        top_ups += index + '. ' + top_up + '\n'
+    for top_up in top_ups_list:
+        top_ups += str(top_up.amount) + ' ETH - ' + str(top_up.created_at) + '\n'
     return top_ups
 
 
@@ -106,13 +105,13 @@ def deposit(user_deposit, user_balance):
     return _BALANCE.format(
         user_deposit,
         user_balance,
-        config.get_daily_percentage() * 100,
+        config.get_daily_reward() * 100,
         config.get_eth_minimal_deposit()
     )
 
 
 def top_up():
-    return _TOP_UP.format(config.get_eth_address())
+    return _TOP_UP.format(config.get_project_eth_address())
 
 
 def withdraw(wallet):

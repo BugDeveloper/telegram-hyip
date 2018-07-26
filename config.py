@@ -33,9 +33,9 @@ def get_token():
     return _TOKEN
 
 
-def get_daily_percentage():
+def get_daily_reward():
     return _DAILY_INCOME
 
 
-def get_eth_address():
+def get_project_eth_address():
     return _ETH_ADDRESS

@@ -1,11 +1,11 @@
 import datetime
-
 from peewee import DoesNotExist
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import Unauthorized, BadRequest, TimedOut, NetworkError, ChatMigrated, TelegramError
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CommandHandler, CallbackQueryHandler
 import lang
-from models import User, Partnership
+from job_callbacks import reward_users
+from models import User, TopUp, Withdrawal
 from eth_utils import is_address as is_eth_address
 import xlsxwriter
 from ban import Ban
@@ -138,7 +138,13 @@ def _menu(bot, update, user_data):
     elif text == _MAIN_BUTTONS['help']:
         return MainMenu.help(bot, user)
     else:
+        bot.send_message(text='Введите валидное значение.', reply_markup=ReplyKeyboardMarkup(_BACK_KEYBOARD))
         return MAIN
+
+
+@run_async
+def test_reward_users():
+    reward_users()
 
 
 def _callback(bot, update):
@@ -172,7 +178,7 @@ class PartnersMenu:
             'Дата регистрации': 'created_date'
         }
 
-        partners_list = user.partners
+        partners_list = user.partners_per_levels
         filename = 'partners/' + user.username + '.xlsx'
 
         workbook = xlsxwriter.Workbook(filename)
@@ -212,10 +218,11 @@ class MainMenu:
 
     @staticmethod
     def transactions(bot, user):
-        top_ups = user.top_ups
-        withdrawals = user.withdrawals
-        text = lang.withdrawals(withdrawals) + '\n' + lang.top_ups(top_ups)
-        bot.send_message(chat_id=user.chat_id, text=text)
+        count_of_last_trx = 3
+        top_ups = user.top_ups.order_by(TopUp.id.desc()).limit(count_of_last_trx)
+        withdrawals = user.withdrawals.order_by(Withdrawal.id.desc()).limit(count_of_last_trx)
+        bot.send_message(chat_id=user.chat_id, text=lang.top_ups(top_ups))
+        bot.send_message(chat_id=user.chat_id, text=lang.withdrawals(withdrawals))
         return MAIN
 
     @staticmethod
@@ -297,20 +304,21 @@ def _start(bot, update, args):
         user = User.get(chat_id=chat_id)
         text = update.message.chat.first_name + ', вы уже зарегистрированны в системе. Добро пожаловать домой!'
     except DoesNotExist:
+        referral = None
+        try:
+            if len(args) > 0:
+                referred_by = args[0]
+                referral = User.get(chat_id=referred_by)
+        except DoesNotExist:
+            pass
+
         user = User.create(
             chat_id=chat_id,
             username=update.message.from_user.username,
             first_name=update.message.from_user.first_name,
-            last_name=update.message.from_user.last_name
+            last_name=update.message.from_user.last_name,
+            referral=referral
         )
-
-        if len(args) > 0:
-            referred_by = args[0]
-            try:
-                referral = User.get(chat_id=referred_by)
-                partnership = Partnership.create(referral=referral, invited=user)
-            except DoesNotExist:
-                pass
 
         text = update.message.chat.first_name + ', вы были успешно зарегистрированны в системе!'
 

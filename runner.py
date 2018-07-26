@@ -1,11 +1,13 @@
+import datetime
 import sys
 
 import telegram
 from telegram.ext import Updater, ConversationHandler
 import logging
 from telegram.utils.request import Request
-import config
 import handlers
+import config
+from job_callbacks import reward_users
 from mq_bot import MQBot
 from telegram.ext import messagequeue as mq
 
@@ -47,6 +49,9 @@ def main(args):
     dispatcher.add_handler(callback_query_handler)
     dispatcher.add_error_handler(handlers.error_callback)
 
+    j = updater.job_queue
+    j.run_daily(reward_users, time=datetime.time(hour=3))
+
     if not len(args) or args[0] == 'polling':
         updater.start_polling()
         print('Polling updater started')
@@ -59,7 +64,7 @@ def main(args):
                               webhook_url='https://167.99.218.143:8443/' + config.get_token())
         print('Webhook updater started')
     else:
-        raise ValueError('Wrong args provided. Enter either "polling" or "webhook".')
+        raise ValueError('Wrong args provided. Use either "polling" or "webhook".')
     updater.idle()
 
 
