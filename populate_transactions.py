@@ -10,7 +10,6 @@ for i in range(10):
         amount=uniform(0, 1.0)
     )
 
-
 for i in range(10):
     withdrawal = Withdrawal.create(
         user=test_user,

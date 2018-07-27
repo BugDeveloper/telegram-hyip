@@ -37,6 +37,7 @@ def main(args):
         ],
         states={
             handlers.MAIN: [
+                start_handler,
                 main_handler,
                 change_wallet_command_handler
             ],

@@ -23,5 +23,7 @@ class MQBot(telegram.bot.Bot):
 
     @mq.queuedmessage
     def send_message(self, *args, **kwargs):
-        text = kwargs['text']
+        if 'text' in kwargs:
+            text = kwargs['text']
+            print(sys.getsizeof(text))
         return super(MQBot, self).send_message(*args, **kwargs)

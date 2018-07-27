@@ -12,9 +12,12 @@ from ban import Ban
 
 MAIN, WALLET_CHANGE = range(2)
 
-_partners_excel_query_spam_filter = {}
+_partners_excel_query_time = {}
+_transactions_excel_query_time = {}
 _commands_spam_filter = {}
 _bans = {}
+
+_EXCEL_DOCS_FOLDER = 'excel/'
 
 
 class UserFloodRestrictions:
@@ -142,9 +145,15 @@ def _menu(bot, update, user_data):
         return MAIN
 
 
-@run_async
-def test_reward_users():
-    reward_users()
+def user_request_excel_too_often(user_id, query_time):
+    if user_id in query_time:
+        last_query = query_time[user_id]
+        now = datetime.datetime.now()
+        seconds_passed = (now - last_query).seconds
+        if seconds_passed < 60:
+            return True
+    query_time[user_id] = datetime.datetime.now()
+    return False
 
 
 def _callback(bot, update):
@@ -153,33 +162,87 @@ def _callback(bot, update):
     user = User.get(chat_id=user_id)
 
     if query.data == 'partners_excel':
-        if user_id in _partners_excel_query_spam_filter:
-            last_query = _partners_excel_query_spam_filter[user_id]
-            now = datetime.datetime.now()
-            seconds_passed = (now - last_query).seconds
-            if seconds_passed < 60:
-                text = 'Нельзя запрашивать excel чаще, чем раз в минуту. Осталось секунд: ' + str(
-                    60 - seconds_passed) + '.'
-                bot.send_message(chat_id=user_id, text=text)
-                return
-        PartnersMenu.partners_excel(bot, user)
+        if user_request_excel_too_often(user_id, _partners_excel_query_time):
+            text = 'Нельзя запрашивать excel партнёров чаще, чем раз в минуту.'
+            bot.send_message(chat_id=user_id, text=text)
+            return
+        ExcelGenerator.partners_excel(bot, user)
+    elif query.data == 'transactions_excel':
+        if user_request_excel_too_often(user_id, _transactions_excel_query_time):
+            text = 'Нельзя запрашивать excel транзакций чаще, чем раз в минуту.'
+            bot.send_message(chat_id=user_id, text=text)
+            return
+        ExcelGenerator.transactions_excel(bot, user)
 
 
-class PartnersMenu:
+class ExcelGenerator:
+
+    @staticmethod
+    def write_models_to_excel(transactions, cols, worksheet, bold, row_start_with):
+        row = row_start_with
+        col = 0
+
+        for field in cols.keys():
+            worksheet.write(row, col, field, bold)
+            col += 1
+        row += 1
+        col = 0
+        for transaction in transactions:
+            for prop_name in cols.values():
+                if prop_name == 'created_at':
+                    created_date = getattr(transaction, prop_name)
+                    worksheet.write(row, col, created_date.strftime("%Y-%m-%d"))
+                else:
+                    worksheet.write(row, col, getattr(transaction, prop_name))
+                col += 1
+            row += 1
+            col = 0
+        return row
+
+    @staticmethod
+    @run_async
+    def transactions_excel(bot, user):
+        cols = {
+            'Сумма': 'amount',
+            'Дата': 'created_at',
+        }
+
+        withdrawals = user.withdrawals
+        top_ups = user.top_ups
+
+        filename = _EXCEL_DOCS_FOLDER + 'transactions/' + user.username + '.xlsx'
+
+        workbook = xlsxwriter.Workbook(filename)
+        worksheet = workbook.add_worksheet()
+        bold = workbook.add_format({'bold': True})
+        header = workbook.add_format()
+        header.set_font_size(15)
+        row = 0
+        worksheet.write(row, 0, 'Ваши выводы', header)
+        row += 1
+
+        row = ExcelGenerator.write_models_to_excel(withdrawals, cols, worksheet, bold, row)
+        row += 1
+        worksheet.write(row, 0, 'Ваши пополнения', header)
+        row += 1
+        row = ExcelGenerator.write_models_to_excel(top_ups, cols, worksheet, bold, row)
+
+        workbook.close()
+        bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
+
     @staticmethod
     @run_async
     def partners_excel(bot, user):
-        _partners_excel_query_spam_filter[user.chat_id] = datetime.datetime.now()
         cols = {
             'Телеграм username': 'username',
             'Имя': 'first_name',
             'Фамилия': 'last_name',
             'Прибыль': 'balance',
-            'Дата регистрации': 'created_date'
+            'Дата регистрации': 'created_at'
         }
 
         partners_list = user.partners_per_levels
-        filename = 'partners/' + user.username + '.xlsx'
+        filename = _EXCEL_DOCS_FOLDER + 'partners/' + user.username + '.xlsx'
 
         workbook = xlsxwriter.Workbook(filename)
         worksheet = workbook.add_worksheet()
@@ -193,24 +256,9 @@ class PartnersMenu:
                 row += 2
             worksheet.write(row, 0, str(level_number) + ' реферальный уровень', bold)
             row += 1
-            col = 0
-            for field in cols.keys():
-                worksheet.write(row, col, field, bold)
-                col += 1
-            row += 1
-            col = 0
-            for partner in level:
-                for prop_name in cols.values():
-                    if prop_name == 'created_date':
-                        created_date = getattr(partner, prop_name)
-                        worksheet.write(row, col, created_date.strftime("%Y-%m-%d"))
-                    else:
-                        worksheet.write(row, col, getattr(partner, prop_name))
-                    col += 1
-                col = 0
-                row += 1
-
+            row = ExcelGenerator.write_models_to_excel(level, cols, worksheet, bold, row)
         workbook.close()
+
         bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
 
 
@@ -221,8 +269,14 @@ class MainMenu:
         count_of_last_trx = 3
         top_ups = user.top_ups.order_by(TopUp.id.desc()).limit(count_of_last_trx)
         withdrawals = user.withdrawals.order_by(Withdrawal.id.desc()).limit(count_of_last_trx)
+        keyboard = [
+            [
+                InlineKeyboardButton("Скачать данные транзакций в excel", callback_data='transactions_excel'),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         bot.send_message(chat_id=user.chat_id, text=lang.top_ups(top_ups))
-        bot.send_message(chat_id=user.chat_id, text=lang.withdrawals(withdrawals))
+        bot.send_message(chat_id=user.chat_id, text=lang.withdrawals(withdrawals), reply_markup=reply_markup)
         return MAIN
 
     @staticmethod

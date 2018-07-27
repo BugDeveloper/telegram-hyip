@@ -33,11 +33,11 @@ _PARTNERS = 'Ваша реферальная ссылка: {}\n'
 
 _BACK_TO_MAIN_MENU = 'Возврат в главное меню.'
 
-_TOP_UPS = 'Ваши пополнения:\n'
+_TOP_UPS = 'Ваши последние пополнения:\n'
 
 _NO_TOP_UPS = 'У вас пока нет пополнений.'
 
-_WITHDRAWALS = 'Ваши выводы:\n'
+_WITHDRAWALS = 'Ваши последние выводы:\n'
 
 _NO_WITHDRAWALS = 'У вас пока нет выводов.'
 
@@ -60,7 +60,7 @@ def withdrawals(withdrawals_list):
         return _NO_WITHDRAWALS
     withdrawals = _WITHDRAWALS
     for index, withdrawal in enumerate(withdrawals_list):
-        withdrawals += str(withdrawal.amount) + ' ETH - ' + str(withdrawal.created_at) + '\n'
+        withdrawals += str(withdrawal.amount) + ' ETH - ' + str(withdrawal.created_at.date()) + '\n'
     return withdrawals
 
 
@@ -69,7 +69,7 @@ def top_ups(top_ups_list):
         return _NO_TOP_UPS
     top_ups = _TOP_UPS
     for top_up in top_ups_list:
-        top_ups += str(top_up.amount) + ' ETH - ' + str(top_up.created_at) + '\n'
+        top_ups += str(top_up.amount) + ' ETH - ' + str(top_up.created_at.date()) + '\n'
     return top_ups
 
 
@@ -85,7 +85,6 @@ def partners(user_id, user_invited_by=None):
     referral_link = 'https://telegram.me/' + config.get_bot_username() + '?start=' + str(user_id)
 
     level_percentage = config.get_referral_levels_percentage()
-    partners_info += 'Реферальные уровни - начисляемые проценты из прибыли партнёров:\n'
 
     for idx, percentage in enumerate(level_percentage):
         partners_info += 'Уровень {} - {}%\n'.format(idx + 1, percentage * 100)

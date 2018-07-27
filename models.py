@@ -14,11 +14,11 @@ class AscensionModel(peewee.Model):
 class User(AscensionModel):
     chat_id = peewee.IntegerField(primary_key=True)
     referral = peewee.ForeignKeyField('self', backref='partners', null=True, on_delete='SET NULL')
-    deposit = peewee.DecimalField(default=0)
-    balance = peewee.DecimalField(default=0)
-    first_level_partners_deposit = peewee.DecimalField(default=0)
-    second_level_partners_deposit = peewee.DecimalField(default=0)
-    third_level_partners_deposit = peewee.DecimalField(default=0)
+    deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
+    balance = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
+    first_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
+    second_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
+    third_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
     wallet = peewee.CharField(max_length=40, null=True, unique=True)
     username = peewee.CharField(max_length=40)
     first_name = peewee.CharField(max_length=40)
@@ -61,11 +61,11 @@ class User(AscensionModel):
 
 class TopUp(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups')
-    amount = peewee.DecimalField(decimal_places=5)
+    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
     created_at = DateTimeField(default=datetime.datetime.now)
 
 
 class Withdrawal(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='withdrawals')
-    amount = peewee.DecimalField(decimal_places=5)
+    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
     created_at = DateTimeField(default=datetime.datetime.now)
