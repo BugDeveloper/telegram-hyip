@@ -16,6 +16,7 @@ class User(AscensionModel):
     referral = peewee.ForeignKeyField('self', backref='partners', null=True, on_delete='SET NULL')
     deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
     balance = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
+    sum_deposit_reward = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
     first_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
     second_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
     third_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
@@ -27,7 +28,6 @@ class User(AscensionModel):
 
     @property
     def partners_per_levels(self):
-
         partners_list = []
         first_level_query = User.select().where(User.referral == self)
 

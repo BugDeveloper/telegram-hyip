@@ -57,12 +57,11 @@ def wallet_successfully_set(wallet):
     return f'ETH кошелёк {wallet} успешно привязанн к вашему аккаунту.'
 
 
-def deposit(user_deposit, user_balance, deposit_reward):
-
+def deposit(user_deposit, user_balance, sum_deposit_reward):
     return f'Ваш депозит: {user_deposit:.7f} ETH. \n' \
            f'Ваш баланс: {user_balance:.7f} ETH. \n' \
            f'Процентная ставка: {config.get_daily_reward() * 100}% в день.\n' \
-           f'Суммарный заработок с депозита: {deposit_reward:.7f} ETH.'
+           f'Суммарный заработок с депозита: {sum_deposit_reward:.7f} ETH.'
 
 
 def top_up():

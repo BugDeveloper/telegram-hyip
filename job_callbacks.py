@@ -5,23 +5,26 @@ from models import User
 
 def reward_users(bot, job):
     levels_percentage = config.get_referral_levels_percentage()
-    query = User.update(balance=(
-            User.balance + User.deposit * config.get_daily_reward()
-            + User.first_level_partners_deposit * levels_percentage[0]
-            + User.second_level_partners_deposit * levels_percentage[1]
-            + User.third_level_partners_deposit * levels_percentage[2]
-    )
+    deposit_reward = User.balance + User.deposit * config.get_daily_reward()
+    query = User.update(
+        balance=(
+                deposit_reward
+                + User.first_level_partners_deposit * levels_percentage[0]
+                + User.second_level_partners_deposit * levels_percentage[1]
+                + User.third_level_partners_deposit * levels_percentage[2]
+        ),
+        sum_deposit_reward=User.sum_deposit_reward + deposit_reward
     ).where(User.deposit >= config.get_eth_minimal_deposit())
     query.execute()
 
     users = User.select().where(User.deposit >= config.get_eth_minimal_deposit())
 
     for user in users:
-        reward = user.deposit * Decimal(config.get_daily_reward())\
-                 + user.first_level_partners_deposit * Decimal(levels_percentage[0])\
-                 + user.second_level_partners_deposit * Decimal(levels_percentage[1])\
+        reward = user.deposit * Decimal(config.get_daily_reward()) \
+                 + user.first_level_partners_deposit * Decimal(levels_percentage[0]) \
+                 + user.second_level_partners_deposit * Decimal(levels_percentage[1]) \
                  + user.third_level_partners_deposit * Decimal(levels_percentage[2])
         bot.send_message(
             chat_id=user.chat_id,
-            text='Вы получили начислений на сумму ' + str(reward) + ' ETH'
+            text=f'Вы получили начислений на сумму {reward:.7f} ETH'
         )

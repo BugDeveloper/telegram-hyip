@@ -17,7 +17,7 @@ _transactions_excel_query_time = {}
 _commands_spam_filter = {}
 _bans = {}
 
-_EXCEL_DOCS_FOLDER = 'excel/'
+_EXCEL_DOCS_FOLDER = 'docs/'
 
 
 class UserFloodRestrictions:
@@ -178,7 +178,7 @@ def _callback(bot, update):
 class ExcelGenerator:
 
     @staticmethod
-    def write_models_to_excel(transactions, cols, worksheet, bold, row_start_with):
+    def write_models_to_excel(models, cols, worksheet, bold, row_start_with):
         row = row_start_with
         col = 0
 
@@ -187,13 +187,13 @@ class ExcelGenerator:
             col += 1
         row += 1
         col = 0
-        for transaction in transactions:
+        for model in models:
             for prop_name in cols.values():
                 if prop_name == 'created_at':
-                    created_date = getattr(transaction, prop_name)
+                    created_date = getattr(model, prop_name)
                     worksheet.write(row, col, created_date.strftime("%Y-%m-%d"))
                 else:
-                    worksheet.write(row, col, getattr(transaction, prop_name))
+                    worksheet.write(row, col, getattr(model, prop_name))
                 col += 1
             row += 1
             col = 0
@@ -333,7 +333,7 @@ class MainMenu:
     @staticmethod
     @run_async
     def deposit(bot, user):
-        text = lang.deposit(user.deposit, user.balance)
+        text = lang.deposit(user.deposit, user.balance, user.sum_deposit_reward)
         bot.send_message(
             chat_id=user.chat_id,
             text=text
@@ -343,10 +343,10 @@ class MainMenu:
     @staticmethod
     @run_async
     def help(bot, user):
-        text = 'Раздел помощи'
+        reward_users(bot, None)
         bot.send_message(
             chat_id=user.chat_id,
-            text=text
+            text=lang.help()
         )
         return MAIN
 
@@ -354,9 +354,12 @@ class MainMenu:
 @run_async
 def _start(bot, update, args):
     chat_id = update.message.chat_id
+    first_name = update.message.chat.first_name
+    username = update.message.from_user.username
+
     try:
         user = User.get(chat_id=chat_id)
-        text = update.message.chat.first_name + ', вы уже зарегистрированны в системе. Добро пожаловать домой!'
+        text = first_name + ', вы уже зарегистрированны в системе. Добро пожаловать домой!'
     except DoesNotExist:
         referral = None
         try:
@@ -368,13 +371,19 @@ def _start(bot, update, args):
 
         user = User.create(
             chat_id=chat_id,
-            username=update.message.from_user.username,
+            username=username,
             first_name=update.message.from_user.first_name,
             last_name=update.message.from_user.last_name,
             referral=referral
         )
 
-        text = update.message.chat.first_name + ', вы были успешно зарегистрированны в системе!'
+        if referral:
+            bot.send_message(
+                chat_id=referral.chat_id,
+                text='По вашей ссылке зарегистрировался новый реферрал: ' + username
+            )
+
+        text = first_name + ', вы были успешно зарегистрированны в системе!'
 
     bot.send_message(chat_id=user.chat_id, text=text, reply_markup=ReplyKeyboardMarkup(_MAIN_KEYBOARD))
     return MAIN
