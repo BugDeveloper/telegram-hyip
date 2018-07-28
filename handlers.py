@@ -17,7 +17,7 @@ _transactions_excel_query_time = {}
 _commands_spam_filter = {}
 _bans = {}
 
-_EXCEL_DOCS_FOLDER = 'docs/'
+_EXCEL_DOCS_FOLDER = 'docs'
 
 
 class UserFloodRestrictions:
@@ -100,7 +100,7 @@ def user_is_spamming(chat_id):
 
 @run_async
 def notify_ban(bot, user_id, ban_hours):
-    text = 'Поздравляем! Вы были забанены за флуд на кол-во часов: ' + str(ban_hours) + '.'
+    text = f'Поздравляем! Вы были забанены за флуд на кол-во часов: {ban_hours}.'
     bot.send_message(chat_id=user_id, text=text)
 
 
@@ -210,7 +210,7 @@ class ExcelGenerator:
         withdrawals = user.withdrawals
         top_ups = user.top_ups
 
-        filename = _EXCEL_DOCS_FOLDER + 'transactions/' + user.username + '.xlsx'
+        filename = f'{_EXCEL_DOCS_FOLDER}/transactions/{user.username}.xlsx'
 
         workbook = xlsxwriter.Workbook(filename)
         worksheet = workbook.add_worksheet()
@@ -242,7 +242,7 @@ class ExcelGenerator:
         }
 
         partners_list = user.partners_per_levels
-        filename = _EXCEL_DOCS_FOLDER + 'partners/' + user.username + '.xlsx'
+        filename = f'{_EXCEL_DOCS_FOLDER}/partners/{user.username}.xlsx'
 
         workbook = xlsxwriter.Workbook(filename)
         worksheet = workbook.add_worksheet()
@@ -254,7 +254,7 @@ class ExcelGenerator:
             level_number += 1
             if not row == 0:
                 row += 2
-            worksheet.write(row, 0, str(level_number) + ' реферальный уровень', bold)
+            worksheet.write(row, 0, f'{level_number} реферальный уровень', bold)
             row += 1
             row = ExcelGenerator.write_models_to_excel(level, cols, worksheet, bold, row)
         workbook.close()
@@ -305,7 +305,7 @@ class MainMenu:
             bot.send_message(chat_id=user.chat_id, text=text)
             return MAIN
         else:
-            text = lang.wallet_not_set() + '\n' + lang.enter_new_wallet()
+            text = f'{lang.wallet_not_set()}\n{lang.enter_new_wallet()}'
 
             bot.send_message(
                 chat_id=user.chat_id,
@@ -359,7 +359,7 @@ def _start(bot, update, args):
 
     try:
         user = User.get(chat_id=chat_id)
-        text = first_name + ', вы уже зарегистрированны в системе. Добро пожаловать домой!'
+        text = f'{first_name}, вы уже зарегистрированны в системе. Добро пожаловать домой!'
     except DoesNotExist:
         referral = None
         try:
@@ -380,10 +380,10 @@ def _start(bot, update, args):
         if referral:
             bot.send_message(
                 chat_id=referral.chat_id,
-                text='По вашей ссылке зарегистрировался новый реферрал: ' + username
+                text=f'По вашей ссылке зарегистрировался новый реферрал: {username}'
             )
 
-        text = first_name + ', вы были успешно зарегистрированны в системе!'
+        text = f'{first_name}, вы были успешно зарегистрированны в системе!'
 
     bot.send_message(chat_id=user.chat_id, text=text, reply_markup=ReplyKeyboardMarkup(_MAIN_KEYBOARD))
     return MAIN
