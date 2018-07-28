@@ -44,8 +44,12 @@ def not_enough_eth():
     return 'У вас недостаточно средств. Введите другую сумму.'
 
 
+def wrong_command():
+    return 'Введите валидную команду.'
+
+
 def withdrawal_created(wallet):
-    return f'Средства будут перечислены на адрес {wallet} Вами адрес в рассчетный день.'
+    return f'Средства будут перечислены на адрес {wallet} в ближайшую среду или воскресенье.'
 
 
 def minimal_withdraw_amount():

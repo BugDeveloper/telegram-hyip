@@ -1,7 +1,7 @@
 import datetime
 import sys
 import telegram
-from telegram.ext import Updater, ConversationHandler
+from telegram.ext import Updater, ConversationHandler, MessageHandler, Filters
 import logging
 from telegram.utils.request import Request
 import bot_states
@@ -38,6 +38,8 @@ def main(args):
 
     callback_query_handler = input_handlers.callback_query_handler()
 
+    fallback_input_handler = input_handlers.fallback_input_handler()
+
     conv_handler = ConversationHandler(
         entry_points=[
             start_command_handler,
@@ -55,7 +57,7 @@ def main(args):
             bot_states.CREATE_WITHDRAWAL: [create_withdraw_input_handler],
             bot_states.TRANSFER_BALANCE_TO_DEPOSIT: [transfer_balance_to_deposit_input_handler]
         },
-        fallbacks=[]
+        fallbacks=[fallback_input_handler]
     )
 
     dispatcher.add_handler(conv_handler)

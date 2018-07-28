@@ -85,6 +85,8 @@ def _main_menu(bot, update, user_data):
         return MainMenu.transactions(bot, user)
     elif text == keyboards.MAIN_BUTTONS['help']:
         return MainMenu.help(bot, user)
+    else:
+        return False
 
 
 def user_request_excel_too_often(user_id, query_time):
@@ -258,7 +260,8 @@ def _transfer_balance_to_deposit(bot, update):
     user.deposit += decimal.Decimal(amount)
     user.save()
 
-    bot.send_message(chat_id=chat_id, text=lang.balance_transferred_to_deposit(amount), reply_markup=keyboards.main_keyboard())
+    bot.send_message(chat_id=chat_id, text=lang.balance_transferred_to_deposit(amount),
+                     reply_markup=keyboards.main_keyboard())
     return bot_states.MAIN
 
 
@@ -380,3 +383,21 @@ def change_wallet_input_handler():
         _change_wallet
     )
     return wallet_handler
+
+
+def fallback_input_handler():
+    handler = MessageHandler(
+        Filters.text | Filters.command,
+        fallback_method
+    )
+    return handler
+
+
+@run_async
+def fallback_method(bot, update):
+    chat_id = update.message.chat_id
+
+    bot.send_message(
+        chat_id=chat_id,
+        text=lang.wrong_command(),
+    )
