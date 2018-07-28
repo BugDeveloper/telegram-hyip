@@ -9,6 +9,10 @@ _REFERRAL_LEVELS_INCOME = [0.1, 0.05, 0.01]
 _DEBUG = True
 
 
+def minimal_eth_withdraw():
+    return _MINIMAL_ETH_WITHDRAW
+
+
 def is_debug_mode():
     return _DEBUG
 
@@ -17,25 +21,25 @@ def get_referral_levels_percentage():
     return _REFERRAL_LEVELS_INCOME
 
 
-def get_test_user_id():
+def test_user_id():
     return _TEST_USER_ID
 
 
-def get_eth_minimal_deposit():
+def eth_minimal_deposit():
     return _MINIMAL_ETH_DEPOSIT
 
 
-def get_bot_username():
+def bot_username():
     return _BOT_USERNAME
 
 
-def get_token():
+def token():
     return _TOKEN
 
 
-def get_daily_reward():
+def daily_reward():
     return _DAILY_INCOME
 
 
-def get_project_eth_address():
+def project_eth_address():
     return _ETH_ADDRESS

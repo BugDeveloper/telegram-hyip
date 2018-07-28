@@ -4,7 +4,7 @@ from flask import Flask, request
 from peewee import DoesNotExist
 from telegram import Bot
 import config
-from models import User
+from models import User, TopUp
 
 app = Flask(__name__)
 
@@ -53,7 +53,6 @@ def top_up_balance():
     try:
         user = User.get(wallet=data['from'].lower())
     except DoesNotExist:
-        print('user not exists')
         return _SUCCESS_RESPONSE
 
     amount = int(data['value'], 0) / _ETH_WEI
@@ -62,9 +61,12 @@ def top_up_balance():
 
     user.deposit += decimal.Decimal(amount)
     user.save()
-
-    bot = Bot(token=config.get_token())
-    bot.send_message(chat_id=user.chat_id, text='Ваш депозит был увеличен на ' + str(amount) + ' ETH.')
+    top_up = TopUp.create(
+        user=user,
+        amount=amount
+    )
+    bot = Bot(token=config.token())
+    bot.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {amount} ETH.')
 
     return _SUCCESS_RESPONSE
 

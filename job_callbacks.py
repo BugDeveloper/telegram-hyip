@@ -5,22 +5,23 @@ from models import User
 
 def reward_users(bot, job):
     levels_percentage = config.get_referral_levels_percentage()
-    deposit_reward = User.balance + User.deposit * config.get_daily_reward()
+    deposit_reward = User.deposit * config.daily_reward()
     query = User.update(
         balance=(
-                deposit_reward
+                User.balance
+                + deposit_reward
                 + User.first_level_partners_deposit * levels_percentage[0]
                 + User.second_level_partners_deposit * levels_percentage[1]
                 + User.third_level_partners_deposit * levels_percentage[2]
         ),
         sum_deposit_reward=User.sum_deposit_reward + deposit_reward
-    ).where(User.deposit >= config.get_eth_minimal_deposit())
+    ).where(User.deposit >= config.eth_minimal_deposit())
     query.execute()
 
-    users = User.select().where(User.deposit >= config.get_eth_minimal_deposit())
+    users = User.select().where(User.deposit >= config.eth_minimal_deposit())
 
     for user in users:
-        reward = user.deposit * Decimal(config.get_daily_reward()) \
+        reward = user.deposit * Decimal(config.daily_reward()) \
                  + user.first_level_partners_deposit * Decimal(levels_percentage[0]) \
                  + user.second_level_partners_deposit * Decimal(levels_percentage[1]) \
                  + user.third_level_partners_deposit * Decimal(levels_percentage[2])

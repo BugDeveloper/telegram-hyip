@@ -5,7 +5,7 @@ core_referral1 = User.create(chat_id=10, username='some_dude1', first_name='Пе
 core_referral11 = User.create(chat_id=20, username='some_dude1', first_name='Педик', referral=core_referral1)
 core_referral111 = User.create(chat_id=30, username='some_dude1', first_name='Педик', referral=core_referral11)
 
-test_user = User.get(chat_id=config.get_test_user_id())
+test_user = User.get(chat_id=config.test_user_id())
 test_user.referral = core_referral111
 test_user.save()
 

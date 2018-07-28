@@ -1,10 +1,6 @@
 import sys
-
 import telegram
-from telegram import ReplyKeyboardMarkup
 from telegram.ext import messagequeue as mq
-import handlers
-import config
 
 
 class MQBot(telegram.bot.Bot):

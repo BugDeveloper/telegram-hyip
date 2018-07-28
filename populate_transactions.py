@@ -2,7 +2,7 @@ from random import uniform
 import config
 from models import User, TopUp, Withdrawal
 
-test_user = User.get(chat_id=config.get_test_user_id())
+test_user = User.get(chat_id=config.test_user_id())
 
 for i in range(10):
     top_up = TopUp.create(

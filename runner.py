@@ -1,19 +1,21 @@
 import datetime
 import sys
-
 import telegram
 from telegram.ext import Updater, ConversationHandler
 import logging
 from telegram.utils.request import Request
-import handlers
+import bot_states
+import command_handlers
 import config
+import error_handlers
+import input_handlers
 from job_callbacks import reward_users
 from mq_bot import MQBot
 from telegram.ext import messagequeue as mq
 
 
 def main(args):
-    token = config.get_token()
+    token = config.token()
     q = mq.MessageQueue(all_burst_limit=28, all_time_limit_ms=1017)
     request = Request(con_pool_size=8)
     bot = MQBot(token=token, request=request, mqueue=q)
@@ -24,31 +26,41 @@ def main(args):
         level=logging.INFO
     )
 
-    main_handler = handlers.get_main_menu_handler()
-    start_handler = handlers.get_start_command_handler()
-    change_wallet_handler = handlers.get_change_wallet_handler()
-    change_wallet_command_handler = handlers.get_change_wallet_command_handler()
-    callback_query_handler = handlers.get_callback_query_handler()
+    change_wallet_command_handler = command_handlers.change_wallet_initiation_handler()
+    withdraw_command_handler = command_handlers.withdraw_command_handler()
+    start_command_handler = command_handlers.start_command_handler()
+    transfer_balance_to_deposit_command_handler = command_handlers.transfer_balance_to_deposit()
+
+    main_handler = input_handlers.main_menu_input_handler()
+    change_wallet_handler = input_handlers.change_wallet_input_handler()
+    create_withdraw_input_handler = input_handlers.withdrawal_input_handler()
+    transfer_balance_to_deposit_input_handler = input_handlers.transfer_balance_to_deposit_input_handler()
+
+    callback_query_handler = input_handlers.callback_query_handler()
 
     conv_handler = ConversationHandler(
         entry_points=[
-            start_handler,
+            start_command_handler,
             main_handler
         ],
         states={
-            handlers.MAIN: [
-                start_handler,
+            bot_states.MAIN: [
+                start_command_handler,
                 main_handler,
-                change_wallet_command_handler
+                change_wallet_command_handler,
+                withdraw_command_handler,
+                transfer_balance_to_deposit_command_handler
             ],
-            handlers.WALLET_CHANGE: [change_wallet_handler],
+            bot_states.WALLET_CHANGE: [change_wallet_handler],
+            bot_states.CREATE_WITHDRAWAL: [create_withdraw_input_handler],
+            bot_states.TRANSFER_BALANCE_TO_DEPOSIT: [transfer_balance_to_deposit_input_handler]
         },
         fallbacks=[]
     )
 
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(callback_query_handler)
-    dispatcher.add_error_handler(handlers.error_callback)
+    dispatcher.add_error_handler(error_handlers.error_callback)
 
     j = updater.job_queue
     j.run_daily(reward_users, time=datetime.time(hour=3))
@@ -56,13 +68,13 @@ def main(args):
     if not len(args) or args[0] == 'polling':
         updater.start_polling()
         print('Polling updater started')
-    elif args[0] =='webhook':
+    elif args[0] == 'webhook':
         updater.start_webhook(listen='0.0.0.0',
                               port=8443,
-                              url_path=config.get_token(),
+                              url_path=config.token(),
                               key='../keys/private.key',
                               cert='../keys/cert.pem',
-                              webhook_url='https://167.99.218.143:8443/' + config.get_token())
+                              webhook_url='https://167.99.218.143:8443/' + config.token())
         print('Webhook updater started')
     else:
         raise ValueError('Wrong args provided. Use either "polling" or "webhook".')
