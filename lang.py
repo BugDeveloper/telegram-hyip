@@ -1,3 +1,5 @@
+import datetime
+
 import config
 
 
@@ -17,7 +19,7 @@ def withdrawals(withdrawals_list):
         return 'У вас пока нет выводов.'
     withdrawals = 'Ваши последние выводы:\n'
     for index, withdrawal in enumerate(withdrawals_list):
-        withdrawals += str(withdrawal.amount) + ' ETH - ' + str(withdrawal.created_at.date()) + '\n'
+        withdrawals += f'{withdrawal.amount} ETH - {withdrawal.created_at}\n'
     return withdrawals
 
 
@@ -26,7 +28,7 @@ def top_ups(top_ups_list):
         return 'У вас пока нет пополнений.'
     top_ups = 'Ваши последние пополнения:\n'
     for top_up in top_ups_list:
-        top_ups += str(top_up.amount) + ' ETH - ' + str(top_up.created_at.date()) + '\n'
+        top_ups += f'{top_up.amount} ETH - {top_up.created_at}\n'
     return top_ups
 
 
@@ -66,16 +68,15 @@ def deposit(user_deposit, user_balance, sum_deposit_reward):
 
 def top_up():
     return f'ETH адрес для инвестиций: {config.get_project_eth_address()}\n' \
-           'Вы можете переводить на этот адрес любую сумму в любое время с вашего привязанного кошелька. ' \
-           'Средства будут зачислены на Ваш счет в течение часа.\n' \
-           'Чтобы изменить адрес ETH кошелька для вывода, введите команду /wallet .'
+           'Для увеличения депозита, вы можете переводить на этот адрес любую сумму с вашего привязанного кошелька.\n' \
+           'Чтобы изменить адрес ETH кошелька, введите команду /wallet .'
 
 
 def withdraw(wallet):
     return f'Ваш адрес для вывода: {wallet}.\n' \
             'Средства будут перечислены на указанный Вами адрес в рассчетный день.\n' \
-            'Чтобы изменить адрес ETH кошелька для вывода, введите команду /wallet .\n' \
-            'Для вывода средств введите /withdraw <сумма>.'
+            'Чтобы изменить адрес ETH кошелька, введите команду /wallet .\n' \
+            'Для вывода средств используйте команду /withdraw.'
 
 
 def wallet_not_set():

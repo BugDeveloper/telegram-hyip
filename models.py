@@ -2,7 +2,6 @@ import datetime
 import peewee
 from peewee import *
 
-
 db = SqliteDatabase('ascension.db')
 
 
@@ -24,7 +23,7 @@ class User(AscensionModel):
     username = peewee.CharField(max_length=40)
     first_name = peewee.CharField(max_length=40)
     last_name = peewee.CharField(max_length=40, null=True)
-    created_at = DateTimeField(default=datetime.datetime.now)
+    created_at = DateTimeField(default=datetime.datetime.now().strftime('%Y-%m-%d'))
 
     @property
     def partners_per_levels(self):
@@ -62,10 +61,10 @@ class User(AscensionModel):
 class TopUp(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups')
     amount = peewee.DecimalField(decimal_places=7, auto_round=True)
-    created_at = DateTimeField(default=datetime.datetime.now)
+    created_at = DateTimeField(default=datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
 
 
 class Withdrawal(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='withdrawals')
     amount = peewee.DecimalField(decimal_places=7, auto_round=True)
-    created_at = DateTimeField(default=datetime.datetime.now)
+    created_at = DateTimeField(default=datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))

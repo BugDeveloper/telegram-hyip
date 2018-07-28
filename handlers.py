@@ -3,6 +3,8 @@ from peewee import DoesNotExist
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import Unauthorized, BadRequest, TimedOut, NetworkError, ChatMigrated, TelegramError
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CommandHandler, CallbackQueryHandler
+
+import config
 import lang
 from job_callbacks import reward_users
 from models import User, TopUp, Withdrawal
@@ -190,8 +192,8 @@ class ExcelGenerator:
         for model in models:
             for prop_name in cols.values():
                 if prop_name == 'created_at':
-                    created_date = getattr(model, prop_name)
-                    worksheet.write(row, col, created_date.strftime("%Y-%m-%d"))
+                    created_date = model.created_at
+                    worksheet.write(row, col, created_date)
                 else:
                     worksheet.write(row, col, getattr(model, prop_name))
                 col += 1
@@ -237,7 +239,7 @@ class ExcelGenerator:
             'Телеграм username': 'username',
             'Имя': 'first_name',
             'Фамилия': 'last_name',
-            'Прибыль': 'balance',
+            'Ваша прибыль': 'sum_deposit_reward',
             'Дата регистрации': 'created_at'
         }
 
@@ -247,16 +249,37 @@ class ExcelGenerator:
         workbook = xlsxwriter.Workbook(filename)
         worksheet = workbook.add_worksheet()
         bold = workbook.add_format({'bold': True})
+        date_format = workbook.add_format({'num_format': 'dd/mm/yy'})
+
         row = 0
         level_number = 0
 
         for level in partners_list:
-            level_number += 1
             if not row == 0:
                 row += 2
-            worksheet.write(row, 0, f'{level_number} реферальный уровень', bold)
+            worksheet.write(row, 0, f'{level_number + 1} реферальный уровень', bold)
             row += 1
-            row = ExcelGenerator.write_models_to_excel(level, cols, worksheet, bold, row)
+            col = 0
+            for field in cols.keys():
+                worksheet.write(row, col, field, bold)
+                col += 1
+            row += 1
+            col = 0
+            levels_percentage = config.get_referral_levels_percentage()
+            for partner in level:
+                for prop_name in cols.values():
+                    if prop_name == 'created_at':
+                        created_date = partner.created_at
+                        worksheet.write(row, col, created_date.strftime("%d/%m/%y"))
+                    elif prop_name == 'sum_deposit_reward':
+                        sum_deposit_reward = getattr(partner, prop_name)
+                        worksheet.write(row, col, float(sum_deposit_reward) * levels_percentage[level_number])
+                    else:
+                        worksheet.write(row, col, getattr(partner, prop_name))
+                    col += 1
+                row += 1
+                col = 0
+            level_number += 1
         workbook.close()
 
         bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
