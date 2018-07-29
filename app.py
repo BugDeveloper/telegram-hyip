@@ -1,36 +1,11 @@
-import decimal
-import hmac
 from flask import Flask, request
-from peewee import DoesNotExist
-from telegram import Bot
-import config
-from models import User, TopUp
+
 
 app = Flask(__name__)
 
 _SUCCESS_RESPONSE = '{status: ok}'
 _ETH_WEI = 1000000000000000000
 _SUBSCRIPTION_KEY = b'7d11e3af35e60dc9d3635c63a93f6f75f619a11c147c413c426534ebe2a22e23'
-
-
-def update_levels_deposit(user, amount):
-    first_level_upper = user.referral
-    if not first_level_upper:
-        return
-    first_level_upper.first_level_partners_deposit += decimal.Decimal(amount)
-    first_level_upper.save()
-
-    second_level_upper = first_level_upper.referral
-    if not second_level_upper:
-        return
-    second_level_upper.second_level_partners_deposit += decimal.Decimal(amount)
-    second_level_upper.save()
-
-    third_level_upper = second_level_upper.referral
-    if not third_level_upper:
-        return
-    third_level_upper.third_level_partners_deposit += decimal.Decimal(amount)
-    third_level_upper.save()
 
 
 @app.route('/confirmed_transaction', methods=['POST'])
@@ -41,7 +16,11 @@ def top_up_balance():
     signatures = request.headers.get('X-Ethercast-Signature')
     signature512 = signatures.split('; ')[1][7:]
 
-    if not _is_signature_valid(signature=signature512, message=message):
+    if not is_signature_valid(
+            signature=signature512,
+            message=message,
+            subscription_key=_SUBSCRIPTION_KEY
+    ):
         return 'Nice try, motherfucker'
 
     if data['to'] != config.get_project_eth_address():
@@ -68,9 +47,10 @@ def top_up_balance():
 
     return _SUCCESS_RESPONSE
 
+@app.route('/')
+def main():
+    return 'Welcome'
 
-def _is_signature_valid(signature, message):
-    enc_message = hmac.new(key=_SUBSCRIPTION_KEY, digestmod='sha512')
-    enc_message.update(message)
-    enc_message = enc_message.hexdigest()
-    return str(enc_message) == signature
+
+if __name__ == "__main__":
+    app.run()
