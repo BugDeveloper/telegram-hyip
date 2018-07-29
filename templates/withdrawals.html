@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Ico Day Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+<ul>
+  <li><a href="/">Статистика</a></li>
+  <li><a href="/withdrawals">Выводы</a></li>
+</ul>
+<br>
+<br>
+<table style="max-width: 1500px; margin: auto;">
+    <tr>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Username
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Wallet
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Amount
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Date and time
+            </b>
+        </td>
+    </tr>
+    <tr>
+    {% for withdrawal in withdrawals %}
+        <td style="padding:0 15px 0 15px;">
+            <a href="https://telegram.me/{{ withdrawal.user.username }}">
+                {{ withdrawal.user.username }}
+            </a>
+        </td>
+        <td style="padding:0 15px 0 15px;">{{ withdrawal.user.wallet }}</td>
+        <td style="padding:0 15px 0 15px;">{{ withdrawal.amount }}</td>
+        <td style="padding:0 15px 0 15px;">{{ withdrawal.created_at.strftime('%Y %B %d %H:%M') }}</td>
+        <td>
+            <button type="button" onclick="approveWithdrawal({{withdrawal.id}})">Одобрить</button>
+        </td>
+    </tr>
+  {% endfor %}
+</table>
+<script>
+    function approveWithdrawal(id) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", '/approve_withdrawal', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({
+        'id': id
+        }));
+        window.location.reload(false);
+    }
+</script>
+</body>
+</html>

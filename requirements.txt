@@ -32,3 +32,4 @@ web3==4.4.1
 websockets==5.0.1
 Werkzeug==0.14.1
 XlsxWriter==1.0.5
+Flask-BasicAuth

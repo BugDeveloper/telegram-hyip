@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Ico Day Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+
+<body>
+<ul>
+  <li><a href="/">Статистика</a></li>
+  <li><a href="/withdrawals">Выводы</a></li>
+</ul>
+
+<div id="top_up_chart" style="max-width: 1500px; margin: auto;"></div>
+<div id="withdrawal_chart" style="max-width: 1500px; margin: auto;"></div>
+<div id="registration_chart" style="max-width: 1500px; margin: auto;"></div>
+
+<script type="text/javascript">
+ google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        var top_up_data = {{top_up_data|safe}}
+        var withdrawal_data = {{withdrawal_data|safe}}
+        var registration_data = {{registration_data|safe}}
+
+        var top_up_data_table = google.visualization.arrayToDataTable(top_up_data);
+        var withdrawal_data_table = google.visualization.arrayToDataTable(withdrawal_data);
+        var registration_data_table = google.visualization.arrayToDataTable(registration_data);
+
+        var top_up_options = {
+          title: 'Top Ups',
+          legend: { position: 'bottom' }
+        };
+
+        var withdrawal_options = {
+          title: 'Withdrawals',
+          legend: { position: 'bottom' }
+        };
+
+        var registration_options = {
+          title: 'Registrations',
+          legend: { position: 'bottom' }
+        };
+
+        if (top_up_data.length > 1) {
+            var top_up_chart = new google.visualization.LineChart(document.getElementById('top_up_chart'));
+            top_up_chart.draw(top_up_data_table, top_up_options);
+        }
+
+        if (withdrawal_data.length > 1) {
+            var withdrawal_chart = new google.visualization.LineChart(document.getElementById('withdrawal_chart'));
+            withdrawal_chart.draw(withdrawal_data_table, withdrawal_options);
+        }
+
+        if (registration_data.length > 1) {
+            var registration_chart = new google.visualization.LineChart(document.getElementById('registration_chart'));
+            registration_chart.draw(registration_data_table, registration_options);
+        }
+      }
+</script>
+</body>
+</html>

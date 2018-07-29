@@ -71,8 +71,7 @@ def partners_excel(bot, user):
         for partner in level:
             for prop_name in cols.values():
                 if prop_name == 'created_at':
-                    created_date = partner.created_at
-                    worksheet.write(row, col, created_date.strftime("%d/%m/%y"))
+                    worksheet.write(row, col, partner.created_at.strftime("%d/%m/%y"))
                 elif prop_name == 'sum_deposit_reward':
                     sum_deposit_reward = getattr(partner, prop_name)
                     partner_reward = float(sum_deposit_reward) * levels_percentage[level_number]
@@ -106,8 +105,7 @@ def _write_models_to_excel(models, cols, worksheet, bold, row_start_with):
     for model in models:
         for prop_name in cols.values():
             if prop_name == 'created_at':
-                created_date = model.created_at
-                worksheet.write(row, col, created_date)
+                worksheet.write(row, col, model.created_at.strftime("%d/%m/%y"))
             else:
                 worksheet.write(row, col, getattr(model, prop_name))
             col += 1
