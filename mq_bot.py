@@ -21,5 +21,5 @@ class MQBot(telegram.bot.Bot):
     def send_message(self, *args, **kwargs):
         if 'text' in kwargs:
             text = kwargs['text']
-            print(sys.getsizeof(text))
+            print('Bytes: ' + str(sys.getsizeof(text)))
         return super(MQBot, self).send_message(*args, **kwargs)

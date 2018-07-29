@@ -1,5 +1,3 @@
-import datetime
-
 import config
 
 
@@ -38,6 +36,11 @@ def back_to_main_menu():
 
 def balance_transferred_to_deposit(amount):
     return f'Сумма в {amount} ETH успешно переведена в депозит.'
+
+
+def not_approved_previous(amount):
+    return f'Ваш прошлый вывод на сумму {amount} ETH ещё не был утверждён.' \
+           f' Вы сможете создать новый запрос на вывод после утверджения предыдущего.'
 
 
 def not_enough_eth():

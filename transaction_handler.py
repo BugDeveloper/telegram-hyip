@@ -37,18 +37,16 @@ def update_levels_deposit(user, amount):
 def top_up_balance():
     data = request.get_json()
 
-    # TODO Include validation
+    message = request.get_data()
+    signatures = request.headers.get('X-Ethercast-Signature')
+    signature512 = signatures.split('; ')[1][7:]
 
-    # message = request.get_data()
-    # signatures = request.headers.get('X-Ethercast-Signature')
-    # signature512 = signatures.split('; ')[1][7:]
-    #
-    # if not _is_signature_valid(signature=signature512, message=message):
-    #     return 'Nice try, motherfucker'
+    if not _is_signature_valid(signature=signature512, message=message):
+        return 'Nice try, motherfucker'
 
-    # if data['to'] != config.get_project_eth_address():
-    #     print('Something is really wrong with ethercast')
-    #     return _SUCCESS_RESPONSE
+    if data['to'] != config.get_project_eth_address():
+        print('Something is really wrong with ethercast')
+        return _SUCCESS_RESPONSE
 
     try:
         user = User.get(wallet=data['from'].lower())
@@ -76,6 +74,3 @@ def _is_signature_valid(signature, message):
     enc_message.update(message)
     enc_message = enc_message.hexdigest()
     return str(enc_message) == signature
-
-# curl -d '{"value":"0x16337cf446e5fc80", "from":"0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE"}' -H "Content-Type: application/json" -X POST http://167.99.218.143/confirmed_transaction
-# curl -d '{"value":"0x16337cf446e5fc80", "from":"0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/confirmed_transaction

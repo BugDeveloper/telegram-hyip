@@ -291,6 +291,17 @@ def _create_withdrawal(bot, update):
         bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
         return bot_states.CREATE_WITHDRAWAL
 
+    try:
+        not_approved_withdrawal = Withdrawal.get(approved=False)
+        bot.send_message(
+            chat_id=chat_id,
+            text=lang.not_approved_previous(not_approved_withdrawal.amount),
+            reply_markup=keyboards.main_keyboard()
+        )
+        return bot_states.MAIN
+    except DoesNotExist:
+        pass
+
     user.balance -= decimal.Decimal(amount)
     user.save()
 

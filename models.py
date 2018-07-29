@@ -66,5 +66,6 @@ class TopUp(AscensionModel):
 
 class Withdrawal(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='withdrawals')
+    approved = BooleanField(default=False)
     amount = peewee.DecimalField(decimal_places=7, auto_round=True)
     created_at = DateTimeField(default=datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
