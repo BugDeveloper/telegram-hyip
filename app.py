@@ -100,6 +100,12 @@ def approve_withdrawal():
     withdrawal = Withdrawal.get(id=id)
     withdrawal.approved = True
     withdrawal.save()
+    bot = MQBot(token=config.token())
+    bot.send_message(
+        chat_id=withdrawal.user.chat_id,
+        text=f'Ваш перевод на сумму {withdrawal.amount} ETH был подтвержден. '
+             f'Средства будут переведены в кратчайшие сроки.'
+    )
     return 'success'
 
 

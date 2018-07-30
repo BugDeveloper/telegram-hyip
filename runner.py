@@ -6,7 +6,9 @@ import logging
 from telegram.utils.request import Request
 import bot_states
 import config
-from handlers import input_handlers, command_handlers, error_handlers
+import error_handlers
+import command_handlers
+import input_handlers
 from job_callbacks import reward_users
 from mq_bot import MQBot
 from telegram.ext import messagequeue as mq
