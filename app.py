@@ -1,8 +1,11 @@
 import datetime
 import decimal
 import hmac
-from mq_bot import MQBot as Bot
-from flask import Flask, request, render_template
+import sys
+import threading
+
+from mq_bot import MQBot
+from flask import Flask, request, render_template, Response
 from peewee import DoesNotExist
 import config
 from models import User, TopUp, Withdrawal
@@ -53,10 +56,41 @@ def top_up_balance():
         user=user,
         amount=amount
     )
-    bot = Bot(token=config.token())
+    bot = MQBot(token=config.token())
     bot.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {amount} ETH.')
 
     return _SUCCESS_RESPONSE
+
+
+@app.route('/notifications')
+@basic_auth.required
+def notifications():
+    return render_template(
+        'notifications.html',
+    )
+
+
+class ValidationError(Exception):
+    pass
+
+
+@app.route('/send_notification', methods=['POST'])
+@basic_auth.required
+def send_notification():
+    message = request.get_json(silent=True)['message']
+    if sys.getsizeof(message) > 500 or message == '':
+        return Response(status=400, mimetype='application/json')
+    notify_all_users(kwargs={'message': message})
+
+    return Response('success', status=200, mimetype='application/json')
+
+
+def notify_all_users(kwargs):
+    users = User.select()
+    bot = MQBot(token=config.token())
+
+    for user in users.iterator():
+        bot.send_message(chat_id=user.chat_id, text=kwargs['message'])
 
 
 @app.route('/approve_withdrawal', methods=['POST'])

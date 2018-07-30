@@ -1,18 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <title>Ico Day Admin</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-</head>
-
-<body>
-<ul>
-  <li><a href="/">Статистика</a></li>
-  <li><a href="/withdrawals">Выводы</a></li>
-</ul>
-
+{% extends 'base.html' %}
+{% block content %}
 <div id="top_up_chart" style="max-width: 1500px; margin: auto;"></div>
 <div id="withdrawal_chart" style="max-width: 1500px; margin: auto;"></div>
 <div id="registration_chart" style="max-width: 1500px; margin: auto;"></div>
@@ -61,5 +48,4 @@
         }
       }
 </script>
-</body>
-</html>
+{% endblock %}

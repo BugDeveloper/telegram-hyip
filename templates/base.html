@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Ico Day Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+
+<body>
+<ul>
+  <li><a href="/">Статистика</a></li>
+  <li><a href="/withdrawals">Выводы</a></li>
+  <li><a href="/notifications">Рассылки</a></li>
+</ul>
+<br>
+<br>
+{% block content %}{% endblock %}
+</body>
+</html>

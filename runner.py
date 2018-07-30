@@ -1,14 +1,12 @@
 import datetime
 import sys
 import telegram
-from telegram.ext import Updater, ConversationHandler, MessageHandler, Filters
+from telegram.ext import Updater, ConversationHandler
 import logging
 from telegram.utils.request import Request
 import bot_states
-import command_handlers
 import config
-import error_handlers
-import input_handlers
+from handlers import input_handlers, command_handlers, error_handlers
 from job_callbacks import reward_users
 from mq_bot import MQBot
 from telegram.ext import messagequeue as mq
