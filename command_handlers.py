@@ -81,6 +81,23 @@ def _wallet_change_command(bot, update):
 
 
 @run_async
+def _transfer_balance_to_user(bot, update):
+    chat_id = update.message.chat_id
+    try:
+        user = User.get(chat_id=chat_id)
+    except DoesNotExist:
+        bot.send_message(chat_id, lang.not_registered())
+        return bot_states.MAIN
+
+    bot.send_message(
+        chat_id=chat_id,
+        text=lang.transfer_balance_to_user(user.balance),
+        reply_markup=keyboards.back_keyboard()
+    )
+    return bot_states.TRANSFER_BALANCE_TO_USER
+
+
+@run_async
 def _withdrawal_command(bot, update):
     chat_id = update.message.chat_id
     try:
@@ -108,6 +125,11 @@ def change_wallet_initiation_handler():
 
 def start_command_handler():
     handler = CommandHandler('start', _start_command, pass_args=True)
+    return handler
+
+
+def transfer_balance_to_user():
+    handler = CommandHandler('transfer_user', _transfer_balance_to_user)
     return handler
 
 

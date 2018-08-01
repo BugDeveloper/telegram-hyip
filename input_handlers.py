@@ -3,9 +3,7 @@ import decimal
 from peewee import DoesNotExist
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CallbackQueryHandler
-
 import bot_states
-import config
 import keyboards
 import lang
 import excel_generator
@@ -13,11 +11,14 @@ from job_callbacks import reward_users
 from models import User, TopUp, Withdrawal
 from eth_utils import is_address as is_eth_address
 from ban import Ban
+import tariffs
 
 _partners_excel_query_time = {}
 _transactions_excel_query_time = {}
 _commands_spam_filter = {}
 _bans = {}
+
+_POSITIVE_FLOAT_REGEX = f'^(?![0.]+$)\d+(\.\d{1,2})|{keyboards.MAIN_BUTTONS["back"]}?$'
 
 
 class UserFloodRestrictions:
@@ -85,8 +86,6 @@ def _main_menu(bot, update, user_data):
         return MainMenu.transactions(bot, user)
     elif text == keyboards.MAIN_BUTTONS['help']:
         return MainMenu.help(bot, user)
-    else:
-        return False
 
 
 def user_request_excel_too_often(user_id, query_time):
@@ -195,7 +194,7 @@ class MainMenu:
     @staticmethod
     @run_async
     def bank(bot, user):
-        text = lang.deposit(user.deposit, user.balance, user.sum_deposit_reward)
+        text = lang.deposit(user.deposit, user.balance, user.deposit_reward, user.sum_deposit_reward)
         bot.send_message(
             chat_id=user.chat_id,
             text=text
@@ -205,6 +204,7 @@ class MainMenu:
     @staticmethod
     @run_async
     def help(bot, user):
+        reward_users(bot, None)
         bot.send_message(
             chat_id=user.chat_id,
             text=lang.help()
@@ -222,12 +222,70 @@ class NotEnoughBalance(Exception):
 
 def _validate_transaction(user, text):
     amount = float(text)
-    if amount < config.minimal_eth_withdraw():
+    if amount < tariffs.minimal_eth_withdraw():
         raise LessThanMinimalWithdraw()
     if amount > user.balance:
         raise NotEnoughBalance
 
     return amount
+
+
+def _transfer_balance_to_user(bot, update):
+    text = update.message.text
+    chat_id = update.message.chat_id
+
+    if text == keyboards.MAIN_BUTTONS['back']:
+        bot.send_message(
+            chat_id=chat_id,
+            text=lang.back_to_main_menu(),
+            reply_markup=keyboards.main_keyboard()
+        )
+        return bot_states.MAIN
+
+    transfer_data = text.split(' ')
+
+    if len(transfer_data) != 2:
+        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
+        return bot_states.TRANSFER_BALANCE_TO_USER
+
+    username = transfer_data[0]
+
+    user = User.get(chat_id=chat_id)
+
+    try:
+        user_to_transfer = User.get(username=username)
+        amount = _validate_transaction(user, transfer_data[1])
+    except ValueError:
+        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
+        return bot_states.TRANSFER_BALANCE_TO_USER
+    except LessThanMinimalWithdraw:
+        bot.send_message(chat_id=chat_id, text=lang.minimal_withdraw_amount())
+        return bot_states.TRANSFER_BALANCE_TO_USER
+    except NotEnoughBalance:
+        bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
+        return bot_states.TRANSFER_BALANCE_TO_USER
+    except DoesNotExist:
+        bot.send_message(chat_id=chat_id, text=lang.user_not_registered())
+        return bot_states.TRANSFER_BALANCE_TO_USER
+
+    amount = decimal.Decimal(amount)
+    user.balance -= amount
+    user.save()
+    user_to_transfer += amount
+    user_to_transfer.save()
+
+    bot.send_message(
+        chat_id=user_to_transfer.chat_id,
+        text=lang.balance_transferred_from_user(amount, user.username),
+        reply_markup=keyboards.main_keyboard()
+    )
+    bot.send_message(
+        chat_id=chat_id,
+        text=lang.balance_transferred_to_user(amount, user_to_transfer.username),
+        reply_markup=keyboards.main_keyboard()
+    )
+
+    return bot_states.MAIN
 
 
 def _transfer_balance_to_deposit(bot, update):
@@ -256,12 +314,16 @@ def _transfer_balance_to_deposit(bot, update):
         bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
         return bot_states.TRANSFER_BALANCE_TO_DEPOSIT
 
-    user.balance -= decimal.Decimal(amount)
-    user.deposit += decimal.Decimal(amount)
+    amount = decimal.Decimal(amount)
+    user.balance -= amount
+    user.deposit += amount
     user.save()
 
-    bot.send_message(chat_id=chat_id, text=lang.balance_transferred_to_deposit(amount),
-                     reply_markup=keyboards.main_keyboard())
+    bot.send_message(
+        chat_id=chat_id,
+        text=lang.balance_transferred_to_deposit(amount),
+        reply_markup=keyboards.main_keyboard()
+    )
     return bot_states.MAIN
 
 
@@ -358,17 +420,18 @@ def callback_query_handler():
 
 
 def main_menu_input_handler():
-    main_handler = RegexHandler('^('
-                                + keyboards.MAIN_BUTTONS['bank'] + '|'
-                                + keyboards.MAIN_BUTTONS['transactions'] + '|'
-                                + keyboards.MAIN_BUTTONS['top_up'] + '|'
-                                + keyboards.MAIN_BUTTONS['withdraw'] + '|'
-                                + keyboards.MAIN_BUTTONS['partners'] + '|'
-                                + keyboards.MAIN_BUTTONS['help']
-                                + ')$',
-                                _main_menu,
-                                pass_user_data=True
-                                )
+    regex = f'^({keyboards.MAIN_BUTTONS["bank"]}|' \
+            f'{keyboards.MAIN_BUTTONS["transactions"]}|' \
+            f'{keyboards.MAIN_BUTTONS["top_up"]}|' \
+            f'{keyboards.MAIN_BUTTONS["withdraw"]}|' \
+            f'{keyboards.MAIN_BUTTONS["partners"]}|' \
+            f'{keyboards.MAIN_BUTTONS["help"]}' \
+            f')$'
+    main_handler = RegexHandler(
+        regex,
+        _main_menu,
+        pass_user_data=True
+    )
     return main_handler
 
 
@@ -388,27 +451,17 @@ def transfer_balance_to_deposit_input_handler():
     return handler
 
 
+def transfer_balance_to_user_input_handler():
+    handler = MessageHandler(
+        Filters.text,
+        _transfer_balance_to_user
+    )
+    return handler
+
+
 def change_wallet_input_handler():
     wallet_handler = MessageHandler(
         Filters.text,
         _change_wallet
     )
     return wallet_handler
-
-
-def fallback_input_handler():
-    handler = MessageHandler(
-        Filters.text | Filters.command,
-        fallback_method
-    )
-    return handler
-
-
-@run_async
-def fallback_method(bot, update):
-    chat_id = update.message.chat_id
-
-    bot.send_message(
-        chat_id=chat_id,
-        text=lang.wrong_command(),
-    )

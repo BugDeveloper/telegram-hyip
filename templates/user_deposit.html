@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div id="errors">
+
+</div>
+<label>
+    User
+</label>
+<input id="username">
+<label>
+    Sum
+</label>
+<input id="amount">
+<button type="button" onclick="increaseDeposit()">Одобрить</button>
+<script>
+    function increaseDeposit() {
+        var username = document.getElementById('username').value
+        var amount = document.getElementById('amount').value
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", '/increase_user_deposit', true);
+        xhr.onreadystatechange = function (oEvent) {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    window.location.reload(false);
+                } else {
+                    document.getElementById("errors").textContent = "Не вводи хуйню";
+                }
+            }
+        };
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({
+        'username': username,
+        'amount': amount
+        }));
+    }
+</script>
+</body>
+</html>
+{% endblock %}

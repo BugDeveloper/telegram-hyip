@@ -30,15 +30,14 @@ def main(args):
     withdraw_command_handler = command_handlers.withdraw_command_handler()
     start_command_handler = command_handlers.start_command_handler()
     transfer_balance_to_deposit_command_handler = command_handlers.transfer_balance_to_deposit()
+    transfer_balance_to_user_command_handler = command_handlers.transfer_balance_to_user()
 
     main_handler = input_handlers.main_menu_input_handler()
     change_wallet_handler = input_handlers.change_wallet_input_handler()
     create_withdraw_input_handler = input_handlers.withdrawal_input_handler()
     transfer_balance_to_deposit_input_handler = input_handlers.transfer_balance_to_deposit_input_handler()
-
+    transfer_balance_to_user_input_handler = input_handlers.transfer_balance_to_user_input_handler()
     callback_query_handler = input_handlers.callback_query_handler()
-
-    fallback_input_handler = input_handlers.fallback_input_handler()
 
     conv_handler = ConversationHandler(
         entry_points=[
@@ -51,13 +50,23 @@ def main(args):
                 main_handler,
                 change_wallet_command_handler,
                 withdraw_command_handler,
-                transfer_balance_to_deposit_command_handler
+                transfer_balance_to_deposit_command_handler,
+                transfer_balance_to_user_command_handler
             ],
-            bot_states.WALLET_CHANGE: [change_wallet_handler],
-            bot_states.CREATE_WITHDRAWAL: [create_withdraw_input_handler],
-            bot_states.TRANSFER_BALANCE_TO_DEPOSIT: [transfer_balance_to_deposit_input_handler]
+            bot_states.WALLET_CHANGE: [
+                change_wallet_handler,
+            ],
+            bot_states.CREATE_WITHDRAWAL: [
+                create_withdraw_input_handler,
+            ],
+            bot_states.TRANSFER_BALANCE_TO_DEPOSIT: [
+                transfer_balance_to_deposit_input_handler,
+            ],
+            bot_states.TRANSFER_BALANCE_TO_USER: [
+                transfer_balance_to_user_input_handler,
+            ]
         },
-        fallbacks=[fallback_input_handler]
+        fallbacks=[]
     )
 
     dispatcher.add_handler(conv_handler)

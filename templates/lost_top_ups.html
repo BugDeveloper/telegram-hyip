@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<table style="max-width: 1500px; margin: auto;">
+    <tr>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                From
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Amount
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Date and time
+            </b>
+        </td>
+    </tr>
+    <tr>
+    {% for top_up in lost_top_ups %}
+        <td style="padding:0 15px 0 15px;">{{ top_up.from_wallet }}</td>
+        <td style="padding:0 15px 0 15px;">{{ top_up.amount }}</td>
+        <td style="padding:0 15px 0 15px;">{{ top_up.created_at.strftime('%Y %B %d %H:%M') }}</td>
+        <td>
+            <button type="button" onclick="receivedTopUp({{top_up.id}})">Зачислен</button>
+        </td>
+    </tr>
+  {% endfor %}
+</table>
+<script>
+    function receivedTopUp(id) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", '/received_top_up', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({
+        'id': id
+        }));
+        window.location.reload();
+    }
+</script>
+</body>
+</html>
+{% endblock %}

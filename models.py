@@ -1,6 +1,11 @@
 import datetime
+from decimal import Decimal, ROUND_HALF_EVEN
+
 import peewee
 from peewee import *
+from playhouse.hybrid import hybrid_property
+
+import tariffs
 
 db = SqliteDatabase('ascension.db')
 
@@ -24,6 +29,51 @@ class User(AscensionModel):
     first_name = peewee.CharField(max_length=40)
     last_name = peewee.CharField(max_length=40, null=True)
     created_at = DateTimeField(default=datetime.datetime.now())
+
+    @hybrid_property
+    def deposit_reward(self):
+
+        gold_tariff_comp = self.deposit.compare(tariffs.tariff_deposit(tariffs.GOLD_TARIFF_INDEX))
+        silver_tariff_comp = self.deposit.compare(tariffs.tariff_deposit(tariffs.SILVER_TARIFF_INDEX))
+        bronze_tariff_comp = self.deposit.compare(tariffs.tariff_deposit(tariffs.BRONZE_TARIFF_INDEX))
+
+        if gold_tariff_comp >= 0:
+            return tariffs.tariff_reward(tariffs.GOLD_TARIFF_INDEX)
+        elif silver_tariff_comp >= 0:
+            return tariffs.tariff_reward(tariffs.SILVER_TARIFF_INDEX)
+        elif bronze_tariff_comp >= 0:
+            return tariffs.tariff_reward(tariffs.BRONZE_TARIFF_INDEX)
+        else:
+            return tariffs.tariff_reward(tariffs.NO_TARIFF_INDEX)
+
+    @deposit_reward.expression
+    def deposit_reward(cls):
+        return Case(
+            None,
+            expression_tuples=[
+                (
+                    cls.deposit.__ge__(
+                        tariffs.tariff_deposit(tariffs.GOLD_TARIFF_INDEX)
+                    ),
+                    tariffs.tariff_reward(tariffs.GOLD_TARIFF_INDEX)
+                ),
+                (
+                    cls.deposit.between(
+                        tariffs.tariff_deposit(tariffs.SILVER_TARIFF_INDEX),
+                        tariffs.tariff_deposit(tariffs.GOLD_TARIFF_INDEX)
+                    ),
+                    tariffs.tariff_reward(tariffs.SILVER_TARIFF_INDEX)
+                ),
+                (
+                    cls.deposit.between(
+                        tariffs.tariff_deposit(tariffs.BRONZE_TARIFF_INDEX),
+                        tariffs.tariff_deposit(tariffs.SILVER_TARIFF_INDEX)
+                    ),
+                    tariffs.tariff_reward(tariffs.BRONZE_TARIFF_INDEX)
+                ),
+            ],
+            default=tariffs.tariff_reward(tariffs.NO_TARIFF_INDEX)
+        )
 
     @property
     def partners_per_levels(self):
@@ -59,8 +109,10 @@ class User(AscensionModel):
 
 
 class TopUp(AscensionModel):
-    user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups')
+    user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
     amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    from_wallet = peewee.CharField(max_length=40, null=True)
+    received = peewee.BooleanField(default=True)
     created_at = DateTimeField(default=datetime.datetime.now())
 
 

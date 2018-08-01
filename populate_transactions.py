@@ -17,6 +17,12 @@ for i in range(5):
 
 for i in range(5):
     top_up = TopUp.create(
+        amount=uniform(0, 1.0),
+        received=False
+    )
+
+for i in range(5):
+    top_up = TopUp.create(
         user=test_user,
         amount=uniform(0, 1.0),
         created_at=week_ago

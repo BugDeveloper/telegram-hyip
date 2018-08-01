@@ -1,7 +1,6 @@
 import xlsxwriter
 from telegram.ext import run_async
-
-import config
+import tariffs
 
 _EXCEL_DOCS_FOLDER = 'docs'
 
@@ -67,14 +66,14 @@ def partners_excel(bot, user):
             col += 1
         row += 1
         col = 0
-        levels_percentage = config.get_referral_levels_percentage()
+        levels_percentage = tariffs.get_referral_levels_percentage()
         for partner in level:
             for prop_name in cols.values():
                 if prop_name == 'created_at':
                     worksheet.write(row, col, partner.created_at.strftime("%d/%m/%y"))
                 elif prop_name == 'sum_deposit_reward':
                     sum_deposit_reward = getattr(partner, prop_name)
-                    partner_reward = float(sum_deposit_reward) * levels_percentage[level_number]
+                    partner_reward = float(sum_deposit_reward) * user.deposit_reward * levels_percentage[level_number]
                     total_partners_reward += partner_reward
                     worksheet.write(row, col, partner_reward)
                 else:

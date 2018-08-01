@@ -1,9 +1,6 @@
 import datetime
 import decimal
 import hmac
-import sys
-import threading
-
 from mq_bot import MQBot
 from flask import Flask, request, render_template, Response
 from peewee import DoesNotExist
@@ -41,56 +38,69 @@ def top_up_balance():
         print('Something is really wrong with ethercast')
         return _SUCCESS_RESPONSE
 
-    try:
-        user = User.get(wallet=data['from'].lower())
-    except DoesNotExist:
-        return _SUCCESS_RESPONSE
-
     amount = int(data['value'], 0) / _ETH_WEI
+    wallet = data['from'].lower()
 
-    Payments.update_levels_deposit(user, amount)
+    try:
+        user = User.get(wallet=wallet)
+        Payments.update_levels_deposit(user, amount)
+        user.deposit += decimal.Decimal(amount)
+        user.save()
 
-    user.deposit += decimal.Decimal(amount)
-    user.save()
-    top_up = TopUp.create(
-        user=user,
-        amount=amount
-    )
-    bot = MQBot(token=config.token())
-    bot.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {amount} ETH.')
+        top_up = TopUp.create(
+            user=user,
+            amount=amount,
+            from_wallet=wallet
+        )
+
+        bot = MQBot(token=config.token())
+        bot.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {amount} ETH.')
+    except DoesNotExist:
+        top_up = TopUp.create(
+            amount=amount,
+            received=False,
+            from_wallet=wallet
+        )
 
     return _SUCCESS_RESPONSE
-
-
-@app.route('/notifications')
-@basic_auth.required
-def notifications():
-    return render_template(
-        'notifications.html',
-    )
 
 
 class ValidationError(Exception):
     pass
 
 
-@app.route('/send_notification', methods=['POST'])
+@app.route('/user_deposit')
 @basic_auth.required
-def send_notification():
-    message = request.get_json(silent=True)['message']
-    if sys.getsizeof(message) > 500 or message == '':
+def user_deposit():
+    return render_template(
+        'user_deposit.html'
+    )
+
+
+@app.route('/increase_user_deposit', methods=['POST'])
+@basic_auth.required
+def increase_user_deposit():
+    json = request.get_json(silent=True)
+    username = json['username']
+    amount = json['amount']
+
+    try:
+        user = User.get(username=username)
+    except DoesNotExist as e:
         return Response(status=400, mimetype='application/json')
-    notify_all_users(kwargs={'message': message})
 
-    return Response('success', status=200, mimetype='application/json')
+    try:
+        amount = float(amount)
+    except ValueError:
+        return Response(status=400, mimetype='application/json')
 
+    user.deposit += decimal.Decimal(amount)
+    user.save()
 
-def notify_all_users(kwargs):
-    users = User.select()
     bot = MQBot(token=config.token())
+    bot.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {amount} ETH.')
 
-    for user in users.iterator():
-        bot.send_message(chat_id=user.chat_id, text=kwargs['message'])
+    return 'success'
 
 
 @app.route('/approve_withdrawal', methods=['POST'])
@@ -98,6 +108,8 @@ def notify_all_users(kwargs):
 def approve_withdrawal():
     id = request.get_json(silent=True)['id']
     withdrawal = Withdrawal.get(id=id)
+    if withdrawal.approved:
+        return 'success'
     withdrawal.approved = True
     withdrawal.save()
     bot = MQBot(token=config.token())
@@ -119,6 +131,30 @@ def withdrawals():
         'withdrawals.html',
         withdrawals=withdrawals
     )
+
+
+@app.route('/lost_top_ups')
+@basic_auth.required
+def lost_top_ups():
+    lost_top_ups = TopUp.select().where(TopUp.received == False)
+
+    return render_template(
+        'lost_top_ups.html',
+        lost_top_ups=lost_top_ups
+    )
+
+
+@app.route('/received_top_up', methods=['POST'])
+@basic_auth.required
+def top_up_received():
+    id = request.get_json(silent=True)['id']
+    top_up = TopUp.get(id=id)
+    if top_up.received:
+        return 'success'
+    top_up.received = True
+    top_up.save()
+
+    return 'success'
 
 
 @app.route('/')
