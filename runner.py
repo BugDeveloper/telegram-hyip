@@ -3,23 +3,19 @@ import sys
 import telegram
 from telegram.ext import Updater, ConversationHandler
 import logging
-from telegram.utils.request import Request
 import bot_states
 import config
 import error_handlers
 import command_handlers
 import input_handlers
+import mq_bot
+from flask_app import app
 from job_callbacks import reward_users
-from mq_bot import MQBot
-from telegram.ext import messagequeue as mq
 
 
 def main(args):
-    token = config.token()
-    q = mq.MessageQueue(all_burst_limit=28, all_time_limit_ms=1017)
-    request = Request(con_pool_size=8)
-    bot = MQBot(token=token, request=request, mqueue=q)
-    updater = telegram.ext.updater.Updater(bot=bot, request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
+    mq_bot.init()
+    updater = telegram.ext.updater.Updater(bot=mq_bot.instance, request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
     dispatcher = updater.dispatcher
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -89,7 +85,8 @@ def main(args):
         print('Webhook updater started')
     else:
         raise ValueError('Wrong args provided. Use either "polling" or "webhook".')
-    updater.idle()
+    app.run()
+    # updater.idle()
 
 
 if __name__ == '__main__':

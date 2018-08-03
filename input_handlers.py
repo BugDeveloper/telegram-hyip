@@ -1,5 +1,4 @@
 import datetime
-import decimal
 from peewee import DoesNotExist
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CallbackQueryHandler
@@ -7,6 +6,7 @@ import bot_states
 import keyboards
 import lang
 import excel_generator
+import mq_bot
 from job_callbacks import reward_users
 from models import User, TopUp, Withdrawal, UserTransfer, DepositTransfer
 from eth_utils import is_address as is_eth_address
@@ -179,7 +179,7 @@ class MainMenu:
     @run_async
     def top_up(bot, user):
         if user.wallet:
-            text = lang.top_up()
+            text = lang.top_up(user.wallet)
             bot.send_message(chat_id=user.chat_id, text=text)
             return bot_states.MAIN
         else:
@@ -275,12 +275,7 @@ def _transfer_balance_to_user(bot, update):
     )
 
     bot.send_message(
-        chat_id=user_to_transfer.chat_id,
-        text=lang.balance_transferred_from_user(amount, user.username),
-        reply_markup=keyboards.main_keyboard()
-    )
-    bot.send_message(
-        chat_id=chat_id,
+        chat_id=user.chat_id,
         text=lang.balance_transferred_to_user(amount, user_to_transfer.username),
         reply_markup=keyboards.main_keyboard()
     )
@@ -370,18 +365,18 @@ def _create_withdrawal(bot, update):
     )
 
     bot.send_message(
-        chat_id=chat_id,
+        chat_id=user.chat_id,
         text=lang.withdrawal_created(user.wallet),
         reply_markup=keyboards.main_keyboard()
     )
+
     return bot_states.MAIN
 
 
 @run_async
 def _change_wallet(bot, update):
-    wallet = update.message.text
     chat_id = update.message.chat_id
-    if wallet == keyboards.MAIN_BUTTONS['back']:
+    if update.message.text == keyboards.MAIN_BUTTONS['back']:
         bot.send_message(
             chat_id=chat_id,
             text=lang.back_to_main_menu(),
@@ -389,10 +384,11 @@ def _change_wallet(bot, update):
         )
         return bot_states.MAIN
 
+    wallet = update.message.text.lower()
+
     if not is_eth_address(wallet):
         bot.send_message(chat_id=chat_id, text=lang.invalid_input())
         return bot_states.WALLET_CHANGE
-
     try:
         User.get(wallet=wallet)
         bot.send_message(chat_id=chat_id, text=lang.eth_address_taken())

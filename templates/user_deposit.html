@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
 <div id="errors">
-
 </div>
 <label>
     User
@@ -21,7 +20,7 @@
         xhr.onreadystatechange = function (oEvent) {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
-                    window.location.reload(false);
+                    location.reload(true);
                 } else {
                     document.getElementById("errors").textContent = "Не вводи хуйню";
                 }

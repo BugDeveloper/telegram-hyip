@@ -1,4 +1,3 @@
-from decimal import Decimal, ROUND_HALF_EVEN
 
 _MINIMAL_ETH_DEPOSIT = 0.0025
 _MINIMAL_ETH_WITHDRAW = 0.0125
@@ -14,10 +13,10 @@ _TARIFF_REWARDS = {
 _PRECISION = '.0001'
 
 _TARIFF_DEPOSIT = {
-    0: Decimal(0).quantize(Decimal(_PRECISION), rounding=ROUND_HALF_EVEN),
-    1: Decimal(0.0025).quantize(Decimal(_PRECISION), rounding=ROUND_HALF_EVEN),
-    2: Decimal(1).quantize(Decimal(_PRECISION), rounding=ROUND_HALF_EVEN),
-    3: Decimal(3).quantize(Decimal(_PRECISION), rounding=ROUND_HALF_EVEN),
+    0: 0,
+    1: 0.0025,
+    2: 1,
+    3: 3,
 }
 
 _REFERRAL_LEVELS_INCOME = [0.1, 0.05, 0.01]

@@ -1,15 +1,37 @@
 import datetime
-from decimal import Decimal, ROUND_HALF_EVEN
-
 import peewee
 import playhouse
 from peewee import *
 from playhouse.hybrid import hybrid_property
 from playhouse.signals import post_save
-
+import keyboards
+import lang
+import mq_bot
 import tariffs
 
 db = SqliteDatabase('ascension.db')
+
+
+class Payments:
+    @staticmethod
+    def update_levels_deposit(user, amount):
+        first_level_upper = user.referral
+        if not first_level_upper:
+            return
+        first_level_upper.first_level_partners_deposit += amount
+        first_level_upper.save()
+
+        second_level_upper = first_level_upper.referral
+        if not second_level_upper:
+            return
+        second_level_upper.second_level_partners_deposit += amount
+        second_level_upper.save()
+
+        third_level_upper = second_level_upper.referral
+        if not third_level_upper:
+            return
+        third_level_upper.third_level_partners_deposit += amount
+        third_level_upper.save()
 
 
 class AscensionModel(playhouse.signals.Model):
@@ -20,12 +42,12 @@ class AscensionModel(playhouse.signals.Model):
 class User(AscensionModel):
     chat_id = peewee.IntegerField(primary_key=True)
     referral = peewee.ForeignKeyField('self', backref='partners', null=True, on_delete='SET NULL')
-    deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
-    balance = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
-    sum_deposit_reward = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
-    first_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
-    second_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
-    third_level_partners_deposit = peewee.DecimalField(default=0, decimal_places=7, auto_round=True)
+    deposit = peewee.FloatField(default=0)
+    balance = peewee.FloatField(default=0)
+    sum_deposit_reward = peewee.FloatField(default=0)
+    first_level_partners_deposit = peewee.FloatField(default=0)
+    second_level_partners_deposit = peewee.FloatField(default=0)
+    third_level_partners_deposit = peewee.FloatField(default=0)
     wallet = peewee.CharField(max_length=40, null=True, unique=True)
     username = peewee.CharField(max_length=40)
     first_name = peewee.CharField(max_length=40)
@@ -34,16 +56,15 @@ class User(AscensionModel):
 
     @hybrid_property
     def deposit_reward(self):
+        gold_tariff_comp = self.deposit >= tariffs.tariff_deposit(tariffs.GOLD_TARIFF_INDEX)
+        silver_tariff_comp = self.deposit >= tariffs.tariff_deposit(tariffs.SILVER_TARIFF_INDEX)
+        bronze_tariff_comp = self.deposit >= tariffs.tariff_deposit(tariffs.BRONZE_TARIFF_INDEX)
 
-        gold_tariff_comp = self.deposit.compare(tariffs.tariff_deposit(tariffs.GOLD_TARIFF_INDEX))
-        silver_tariff_comp = self.deposit.compare(tariffs.tariff_deposit(tariffs.SILVER_TARIFF_INDEX))
-        bronze_tariff_comp = self.deposit.compare(tariffs.tariff_deposit(tariffs.BRONZE_TARIFF_INDEX))
-
-        if gold_tariff_comp >= 0:
+        if gold_tariff_comp:
             return tariffs.tariff_reward(tariffs.GOLD_TARIFF_INDEX)
-        elif silver_tariff_comp >= 0:
+        elif silver_tariff_comp:
             return tariffs.tariff_reward(tariffs.SILVER_TARIFF_INDEX)
-        elif bronze_tariff_comp >= 0:
+        elif bronze_tariff_comp:
             return tariffs.tariff_reward(tariffs.BRONZE_TARIFF_INDEX)
         else:
             return tariffs.tariff_reward(tariffs.NO_TARIFF_INDEX)
@@ -111,8 +132,8 @@ class User(AscensionModel):
 
 
 class DepositTransfer(AscensionModel):
-    user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
-    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    user = ForeignKeyField(User, on_delete='CASCADE', related_name='deposit_transfers', null=True)
+    amount = peewee.FloatField()
     created_at = DateTimeField(default=datetime.datetime.now())
 
 
@@ -123,12 +144,13 @@ def on_save_handler(model_class, instance, created):
     user.balance -= amount
     user.deposit += amount
     user.save()
+    Payments.update_levels_deposit(user, instance.amount)
 
 
 class UserTransfer(AscensionModel):
-    from_user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
-    to_user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
-    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    from_user = ForeignKeyField(User, on_delete='CASCADE', related_name='transfers_from', null=True)
+    to_user = ForeignKeyField(User, on_delete='CASCADE', related_name='transfers_to', null=True)
+    amount = peewee.FloatField()
     created_at = DateTimeField(default=datetime.datetime.now())
 
 
@@ -144,10 +166,15 @@ def on_save_handler(model_class, instance, created):
         to_user.balance += amount
         to_user.save()
 
+        mq_bot.instance.send_message(
+            chat_id=to_user.chat_id,
+            text=lang.balance_transferred_from_user(amount, from_user.username),
+        )
+
 
 class TopUp(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
-    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    amount = peewee.FloatField()
     from_wallet = peewee.CharField(max_length=40, null=True)
     received = peewee.BooleanField(default=True)
     created_at = DateTimeField(default=datetime.datetime.now())
@@ -155,15 +182,18 @@ class TopUp(AscensionModel):
 
 @post_save(sender=TopUp)
 def on_save_handler(model_class, instance, created):
-    user = instance.user
-    user.balance += instance.amount
-    user.save()
+    if instance.user:
+        user = instance.user
+        user.deposit += instance.amount
+        user.save()
+        Payments.update_levels_deposit(user, instance.amount)
+        mq_bot.instance.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {instance.amount} ETH.')
 
 
 class Withdrawal(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='withdrawals')
     approved = BooleanField(default=False)
-    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    amount = peewee.FloatField()
     created_at = DateTimeField(default=datetime.datetime.now())
 
 
@@ -171,7 +201,13 @@ class Withdrawal(AscensionModel):
 def on_save_handler(model_class, instance, created):
     user = instance.user
 
-    if user.balance > instance.amount:
-        user = instance.user
-        user.balance -= instance.amount
-        user.save()
+    if created:
+        if user.balance > instance.amount:
+            user.balance -= instance.amount
+            user.save()
+    elif instance.approved:
+        mq_bot.instance.send_message(
+            chat_id=user.chat_id,
+            text=f'Ваш перевод на сумму {instance.amount} ETH был подтвержден. '
+                 f'Средства будут переведены в кратчайшие сроки.'
+        )

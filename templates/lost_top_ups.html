@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
+<div id="errors">
+</div>
 <table style="max-width: 1500px; margin: auto;">
     <tr>
         <td style="padding:0 15px 0 15px;">
@@ -24,18 +26,30 @@
         <td style="padding:0 15px 0 15px;">{{ top_up.amount }}</td>
         <td style="padding:0 15px 0 15px;">{{ top_up.created_at.strftime('%Y %B %d %H:%M') }}</td>
         <td>
-            <button type="button" onclick="receivedTopUp({{top_up.id}})">Зачислен</button>
+            <input id="username">
+            <button type="button" onclick="receivedTopUp({{top_up.id}})">Зачислить</button>
         </td>
     </tr>
   {% endfor %}
 </table>
 <script>
     function receivedTopUp(id) {
+        var username = document.getElementById('username').value
         var xhr = new XMLHttpRequest();
         xhr.open("POST", '/received_top_up', true);
+        xhr.onreadystatechange = function (oEvent) {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    location.reload(true);
+                } else {
+                    document.getElementById("errors").textContent = "Не вводи хуйню";
+                }
+            }
+        };
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.send(JSON.stringify({
-        'id': id
+        'id': id,
+        'username': username,
         }));
         window.location.reload();
     }

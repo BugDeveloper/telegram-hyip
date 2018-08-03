@@ -14,6 +14,9 @@ def transactions_excel(bot, user):
 
     withdrawals = user.withdrawals
     top_ups = user.top_ups
+    deposit_transfers = user.deposit_transfers
+    transfers_from = user.transfers_from
+    transfers_to = user.transfers_to
 
     filename = f'{_EXCEL_DOCS_FOLDER}/transactions/{user.username}.xlsx'
 
@@ -22,15 +25,34 @@ def transactions_excel(bot, user):
     bold = workbook.add_format({'bold': True})
     header = workbook.add_format()
     header.set_font_size(15)
+
+    def rows_callback(prop_name, row, col, model):
+        if prop_name == 'created_at':
+            worksheet.write(row, col, model.created_at.strftime("%d/%m/%y"))
+        else:
+            worksheet.write(row, col, getattr(model, prop_name))
+
     row = 0
-    worksheet.write(row, 0, 'Ваши выводы', header)
+    worksheet.write(row, 0, 'Выводы', header)
     row += 1
 
-    row = _write_models_to_excel(withdrawals, cols, worksheet, bold, row)
+    row = _write_models_to_excel(withdrawals, cols, worksheet, bold, row, rows_callback)
     row += 1
-    worksheet.write(row, 0, 'Ваши пополнения', header)
+    worksheet.write(row, 0, 'Пополнения', header)
     row += 1
-    row = _write_models_to_excel(top_ups, cols, worksheet, bold, row)
+    row = _write_models_to_excel(top_ups, cols, worksheet, bold, row, rows_callback)
+    row += 1
+    worksheet.write(row, 0, 'Переводы в депозит', header)
+    row += 1
+    row = _write_models_to_excel(deposit_transfers, cols, worksheet, bold, row, rows_callback)
+    row += 1
+    worksheet.write(row, 0, 'Переводы другим пользователям', header)
+    row += 1
+    row = _write_models_to_excel(transfers_from, cols, worksheet, bold, row, rows_callback)
+    row += 1
+    worksheet.write(row, 0, 'Переводы вам от других пользователей', header)
+    row += 1
+    row = _write_models_to_excel(transfers_to, cols, worksheet, bold, row, rows_callback)
 
     workbook.close()
     bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
@@ -87,7 +109,7 @@ def partners_excel(bot, user):
     bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
 
 
-def _write_models_to_excel(models, cols, worksheet, bold, row_start_with):
+def _write_models_to_excel(models, cols, worksheet, bold, row_start_with, callback):
     row = row_start_with
     col = 0
 
@@ -98,10 +120,7 @@ def _write_models_to_excel(models, cols, worksheet, bold, row_start_with):
     col = 0
     for model in models:
         for prop_name in cols.values():
-            if prop_name == 'created_at':
-                worksheet.write(row, col, model.created_at.strftime("%d/%m/%y"))
-            else:
-                worksheet.write(row, col, getattr(model, prop_name))
+            callback(prop_name, row, col, model)
             col += 1
         row += 1
         col = 0

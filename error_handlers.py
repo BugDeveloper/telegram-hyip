@@ -9,6 +9,8 @@ def error_callback(bot, update, error):
         user = User.get(chat_id=update.message.chat_id)
         user.delete()
     except BadRequest:
+        print('asffsdkjngmkfgkjfdmkewjfdndfmkfvkr erklmverlmrekmfermflerkmfklm')
+        raise Exception(1)
         # handle malformed requests - read more below!
         pass
     except TimedOut:

@@ -1,6 +1,15 @@
 import sys
 import telegram
 from telegram.ext import messagequeue as mq
+from telegram.utils.request import Request
+import config
+
+
+def init():
+    global instance
+    q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
+    request = Request(con_pool_size=8)
+    instance = MQBot(token=config.token(), request=request, mqueue=q)
 
 
 class MQBot(telegram.bot.Bot):
@@ -8,7 +17,7 @@ class MQBot(telegram.bot.Bot):
     def __init__(self, *args, is_queued_def=True, mqueue=None, **kwargs):
         super(MQBot, self).__init__(*args, **kwargs)
         self._is_messages_queued_default = is_queued_def
-        self._msg_queue = mqueue or mq.MessageQueue()
+        self._msg_queue = mqueue or mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
 
     def __del__(self):
         try:

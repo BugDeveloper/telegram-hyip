@@ -1,5 +1,3 @@
-from decimal import Decimal, ROUND_HALF_EVEN
-
 import tariffs
 import config
 
@@ -96,15 +94,9 @@ def wallet_successfully_set(wallet):
 
 def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
     text = f'Депозит: {user_deposit:.7f} ETH. \n'
+    minimal_eth_deposit_dec = tariffs.eth_minimal_deposit()
 
-    user_deposit_dec = Decimal(user_deposit).quantize(Decimal('.0001'), rounding=ROUND_HALF_EVEN)
-    minimal_eth_deposit_dec = Decimal(
-        tariffs.eth_minimal_deposit()).quantize(
-        Decimal('.0001'),
-        rounding=ROUND_HALF_EVEN
-    )
-
-    if user_deposit_dec.compare(minimal_eth_deposit_dec) < 0:
+    if user_deposit < minimal_eth_deposit_dec:
         text += f'Минимальная сумма депозита для начисления процентов: {tariffs.eth_minimal_deposit()} ETH'
         return text
     text += f'Баланс: {user_balance:.7f} ETH. \n' \
@@ -115,14 +107,15 @@ def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
     return text
 
 
-def top_up():
-    return f'ETH адрес для инвестиций: {config.project_eth_address()}\n' \
-           'Для увеличения депозита, вы можете переводить на этот адрес любую сумму с вашего привязанного кошелька.\n' \
+def top_up(wallet):
+    return f'Ваш кошелёк: {wallet}\n' \
+           f'ETH адрес для инвестиций: {config.project_eth_address()}\n' \
+           f'Для увеличения депозита, переводите на этот адрес любую сумму.\n' \
            'Чтобы изменить адрес ETH кошелька, введите команду /wallet .'
 
 
 def withdraw(wallet):
-    return f'Ваш адрес для вывода: {wallet}.\n' \
+    return f'Ваш кошелёк: {wallet}.\n' \
            'Чтобы изменить адрес ETH кошелька, введите команду /wallet .\n' \
            'Для вывода средств используйте команду /withdraw.'
 
