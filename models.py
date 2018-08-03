@@ -2,15 +2,17 @@ import datetime
 from decimal import Decimal, ROUND_HALF_EVEN
 
 import peewee
+import playhouse
 from peewee import *
 from playhouse.hybrid import hybrid_property
+from playhouse.signals import post_save
 
 import tariffs
 
 db = SqliteDatabase('ascension.db')
 
 
-class AscensionModel(peewee.Model):
+class AscensionModel(playhouse.signals.Model):
     class Meta:
         database = db
 
@@ -108,6 +110,41 @@ class User(AscensionModel):
         return partners_list
 
 
+class DepositTransfer(AscensionModel):
+    user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
+    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    created_at = DateTimeField(default=datetime.datetime.now())
+
+
+@post_save(sender=DepositTransfer)
+def on_save_handler(model_class, instance, created):
+    user = instance.user
+    amount = instance.amount
+    user.balance -= amount
+    user.deposit += amount
+    user.save()
+
+
+class UserTransfer(AscensionModel):
+    from_user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
+    to_user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
+    amount = peewee.DecimalField(decimal_places=7, auto_round=True)
+    created_at = DateTimeField(default=datetime.datetime.now())
+
+
+@post_save(sender=UserTransfer)
+def on_save_handler(model_class, instance, created):
+    from_user = instance.from_user
+    to_user = instance.to_user
+    amount = instance.amount
+
+    if from_user.balance > amount:
+        from_user.balance -= amount
+        from_user.save()
+        to_user.balance += amount
+        to_user.save()
+
+
 class TopUp(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='top_ups', null=True)
     amount = peewee.DecimalField(decimal_places=7, auto_round=True)
@@ -116,8 +153,25 @@ class TopUp(AscensionModel):
     created_at = DateTimeField(default=datetime.datetime.now())
 
 
+@post_save(sender=TopUp)
+def on_save_handler(model_class, instance, created):
+    user = instance.user
+    user.balance += instance.amount
+    user.save()
+
+
 class Withdrawal(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='withdrawals')
     approved = BooleanField(default=False)
     amount = peewee.DecimalField(decimal_places=7, auto_round=True)
     created_at = DateTimeField(default=datetime.datetime.now())
+
+
+@post_save(sender=Withdrawal)
+def on_save_handler(model_class, instance, created):
+    user = instance.user
+
+    if user.balance > instance.amount:
+        user = instance.user
+        user.balance -= instance.amount
+        user.save()

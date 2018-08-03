@@ -8,7 +8,7 @@ import keyboards
 import lang
 import excel_generator
 from job_callbacks import reward_users
-from models import User, TopUp, Withdrawal
+from models import User, TopUp, Withdrawal, UserTransfer, DepositTransfer
 from eth_utils import is_address as is_eth_address
 from ban import Ban
 import tariffs
@@ -268,11 +268,11 @@ def _transfer_balance_to_user(bot, update):
         bot.send_message(chat_id=chat_id, text=lang.user_not_registered())
         return bot_states.TRANSFER_BALANCE_TO_USER
 
-    amount = decimal.Decimal(amount)
-    user.balance -= amount
-    user.save()
-    user_to_transfer += amount
-    user_to_transfer.save()
+    UserTransfer.create(
+        from_user=user,
+        to_user=user_to_transfer,
+        amount=amount,
+    )
 
     bot.send_message(
         chat_id=user_to_transfer.chat_id,
@@ -314,10 +314,10 @@ def _transfer_balance_to_deposit(bot, update):
         bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
         return bot_states.TRANSFER_BALANCE_TO_DEPOSIT
 
-    amount = decimal.Decimal(amount)
-    user.balance -= amount
-    user.deposit += amount
-    user.save()
+    DepositTransfer.create(
+        user=user,
+        amount=amount
+    )
 
     bot.send_message(
         chat_id=chat_id,
@@ -364,10 +364,7 @@ def _create_withdrawal(bot, update):
     except DoesNotExist:
         pass
 
-    user.balance -= decimal.Decimal(amount)
-    user.save()
-
-    withdrawal = Withdrawal.create(
+    Withdrawal.create(
         user=user,
         amount=amount
     )
@@ -464,4 +461,5 @@ def change_wallet_input_handler():
         Filters.text,
         _change_wallet
     )
+
     return wallet_handler

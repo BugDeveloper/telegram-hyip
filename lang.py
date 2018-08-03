@@ -142,7 +142,7 @@ def transfer_balance_to_deposit(balance):
 
 def transfer_balance_to_user(balance):
     return f'Ваш баланс: {balance:.7f} ETH .\n' \
-           'Введите имя пользователя (алиас) Telegram и сумму которую хотите перевести через пробел.' \
+           'Введите имя пользователя (алиас) Telegram и сумму которую хотите перевести через пробел.\n' \
            'Например: "ivan 1"'
 
 

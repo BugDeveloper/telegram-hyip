@@ -19,6 +19,35 @@ _ETH_WEI = 1000000000000000000
 _SUBSCRIPTION_KEY = b'7d11e3af35e60dc9d3635c63a93f6f75f619a11c147c413c426534ebe2a22e23'
 
 
+class Payments:
+    @staticmethod
+    def update_levels_deposit(user, amount):
+        first_level_upper = user.referral
+        if not first_level_upper:
+            return
+        first_level_upper.first_level_partners_deposit += decimal.Decimal(amount)
+        first_level_upper.save()
+
+        second_level_upper = first_level_upper.referral
+        if not second_level_upper:
+            return
+        second_level_upper.second_level_partners_deposit += decimal.Decimal(amount)
+        second_level_upper.save()
+
+        third_level_upper = second_level_upper.referral
+        if not third_level_upper:
+            return
+        third_level_upper.third_level_partners_deposit += decimal.Decimal(amount)
+        third_level_upper.save()
+
+    @staticmethod
+    def is_signature_valid(signature, message, subscription_key):
+        enc_message = hmac.new(key=subscription_key, digestmod='sha512')
+        enc_message.update(message)
+        enc_message = enc_message.hexdigest()
+        return str(enc_message) == signature
+
+
 @app.route('/confirmed_transaction', methods=['POST'])
 def top_up_balance():
     data = request.get_json()
@@ -64,6 +93,9 @@ def top_up_balance():
 
     return _SUCCESS_RESPONSE
 
+
+# curl -d '{"value":"0x16337cf446e5fc80", "from":"0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE"}' -H "Content-Type: application/json" -X POST http://167.99.218.143/confirmed_transaction
+# curl -d '{"to":"WALLET","value":"0x16337cf446e5fc80", "from":"0x32be343b94f860124dc4fee278fdcbd38c102d88"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/confirmed_transaction
 
 class ValidationError(Exception):
     pass
@@ -230,32 +262,3 @@ def statistics():
 
 if __name__ == "__main__":
     app.run()
-
-
-class Payments:
-    @staticmethod
-    def update_levels_deposit(user, amount):
-        first_level_upper = user.referral
-        if not first_level_upper:
-            return
-        first_level_upper.first_level_partners_deposit += decimal.Decimal(amount)
-        first_level_upper.save()
-
-        second_level_upper = first_level_upper.referral
-        if not second_level_upper:
-            return
-        second_level_upper.second_level_partners_deposit += decimal.Decimal(amount)
-        second_level_upper.save()
-
-        third_level_upper = second_level_upper.referral
-        if not third_level_upper:
-            return
-        third_level_upper.third_level_partners_deposit += decimal.Decimal(amount)
-        third_level_upper.save()
-
-    @staticmethod
-    def is_signature_valid(signature, message, subscription_key):
-        enc_message = hmac.new(key=subscription_key, digestmod='sha512')
-        enc_message.update(message)
-        enc_message = enc_message.hexdigest()
-        return str(enc_message) == signature

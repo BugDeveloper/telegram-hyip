@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from peewee import SqliteDatabase
-from models import User, TopUp, Withdrawal
+from models import User, TopUp, Withdrawal, DepositTransfer, UserTransfer
 
 _DB_NAME = 'ascension.db'
 
@@ -18,6 +18,6 @@ else:
     exit(1)
 
 db = SqliteDatabase(_DB_NAME)
-db.create_tables([User, TopUp, Withdrawal])
+db.create_tables([User, TopUp, Withdrawal, DepositTransfer, UserTransfer])
 sqlite = sqlite3.connect(_DB_NAME)
 sqlite.close()

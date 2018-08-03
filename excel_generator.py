@@ -42,7 +42,7 @@ def partners_excel(bot, user):
         'Телеграм username': 'username',
         'Имя': 'first_name',
         'Фамилия': 'last_name',
-        'Ваша прибыль': 'sum_deposit_reward',
+        'Депозит': 'deposit',
         'Дата регистрации': 'created_at'
     }
 
@@ -71,11 +71,6 @@ def partners_excel(bot, user):
             for prop_name in cols.values():
                 if prop_name == 'created_at':
                     worksheet.write(row, col, partner.created_at.strftime("%d/%m/%y"))
-                elif prop_name == 'sum_deposit_reward':
-                    sum_deposit_reward = getattr(partner, prop_name)
-                    partner_reward = float(sum_deposit_reward) * user.deposit_reward * levels_percentage[level_number]
-                    total_partners_reward += partner_reward
-                    worksheet.write(row, col, partner_reward)
                 else:
                     worksheet.write(row, col, getattr(partner, prop_name))
                 col += 1
@@ -84,7 +79,7 @@ def partners_excel(bot, user):
         level_number += 1
     row += 1
     col = 0
-    worksheet.write(row, col, 'Суммарный заработок с партнёров:', bold)
+    worksheet.write(row, col, 'Суммарный заработок с партнёров', bold)
     col += 1
     worksheet.write(row, col, total_partners_reward)
     workbook.close()

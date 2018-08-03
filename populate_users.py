@@ -9,21 +9,22 @@ week_ago = now - datetime.timedelta(days=7)
 
 core_referral1 = User.create(
     chat_id=10,
-    username='some_dude1',
+    username='core_referral1',
     first_name='Педик',
     created_at=two_weeks_ago
 )
+
 core_referral11 = User.create(
     chat_id=20,
-    username='some_dude1',
+    username='core_referral11',
     first_name='Педик',
     referral=core_referral1,
     created_at=two_weeks_ago
-
 )
+
 core_referral111 = User.create(
     chat_id=30,
-    username='some_dude1',
+    username='core_referral111',
     first_name='Педик',
     referral=core_referral11,
     created_at=two_weeks_ago
@@ -41,6 +42,7 @@ user1 = User.create(
     sum_deposit_reward=0.1,
     created_at=week_ago
 )
+
 user2 = User.create(
     chat_id=2,
     username='some_dude2',
@@ -49,6 +51,7 @@ user2 = User.create(
     sum_deposit_reward=0.1,
     created_at=week_ago
 )
+
 user3 = User.create(
     chat_id=3,
     username='some_dude3',
@@ -66,6 +69,7 @@ user11 = User.create(
     sum_deposit_reward=0.1,
     created_at=week_ago
 )
+
 user12 = User.create(
     chat_id=12,
     username='some_dude12',
@@ -74,6 +78,7 @@ user12 = User.create(
     sum_deposit_reward=0.1,
     created_at=week_ago
 )
+
 user13 = User.create(
     chat_id=13,
     username='some_dude13',
@@ -91,6 +96,7 @@ user121 = User.create(
     sum_deposit_reward=0.1,
     created_at=week_ago
 )
+
 user122 = User.create(
     chat_id=122,
     username='some_dude122',
