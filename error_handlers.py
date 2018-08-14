@@ -1,26 +1,31 @@
 from telegram.error import Unauthorized, BadRequest, TimedOut, NetworkError, ChatMigrated, TelegramError
-from models import User
+from telegram.ext import run_async
+import bot_states
+
+
+@run_async
+def timed_out_handler(bot, update):
+    user_id = update.message.chat_id
+    bot.send_message(
+        chat_id=user_id,
+        text='Во время обработки прошлого запроса произошла ошибка.\n'
+             'Пожалуйста сообщите в тех поддержку.'
+    )
+    return bot_states.MAIN
 
 
 def error_callback(bot, update, error):
     try:
         raise error
     except Unauthorized:
-        user = User.get(chat_id=update.message.chat_id)
-        user.delete()
+        print('remove update.message.chat_id from conversation list')
     except BadRequest:
-        print('asffsdkjngmkfgkjfdmkewjfdndfmkfvkr erklmverlmrekmfermflerkmfklm')
-        raise Exception(1)
-        # handle malformed requests - read more below!
-        pass
+        print('handle malformed requests - read more below!')
     except TimedOut:
-        pass
+        print('handle slow connection problems')
     except NetworkError:
-        # handle other connection problems
-        pass
+        print('handle other connection problems')
     except ChatMigrated as e:
-        # the chat_id of a group has changed, use e.new_chat_id instead
-        pass
+        print('the chat_id of a group has changed, use e.new_chat_id instead')
     except TelegramError:
-        # handle all other telegram related error
-        pass
+        print('handle all other telegram related errors')

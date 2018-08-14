@@ -6,7 +6,6 @@ import bot_states
 import keyboards
 import lang
 import excel_generator
-import mq_bot
 from job_callbacks import reward_users
 from models import User, TopUp, Withdrawal, UserTransfer, DepositTransfer
 from eth_utils import is_address as is_eth_address
@@ -179,7 +178,7 @@ class MainMenu:
     @run_async
     def top_up(bot, user):
         if user.wallet:
-            text = lang.top_up(user.wallet)
+            text = lang.top_up()
             bot.send_message(chat_id=user.chat_id, text=text)
             return bot_states.MAIN
         else:

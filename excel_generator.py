@@ -7,6 +7,19 @@ _EXCEL_DOCS_FOLDER = 'docs'
 
 @run_async
 def transactions_excel(bot, user):
+
+    transfer_from = {
+        'Сумма': 'amount',
+        'Дата': 'created_at',
+        'От пользователя': 'from_user',
+    }
+
+    transfer_to = {
+        'Сумма': 'amount',
+        'Дата': 'created_at',
+        'Пользователю': 'to_user',
+    }
+
     cols = {
         'Сумма': 'amount',
         'Дата': 'created_at',
@@ -18,7 +31,7 @@ def transactions_excel(bot, user):
     transfers_from = user.transfers_from
     transfers_to = user.transfers_to
 
-    filename = f'{_EXCEL_DOCS_FOLDER}/transactions/{user.username}.xlsx'
+    filename = f'{_EXCEL_DOCS_FOLDER}/transactions/{user.username}_transactions.xlsx'
 
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()
@@ -26,33 +39,27 @@ def transactions_excel(bot, user):
     header = workbook.add_format()
     header.set_font_size(15)
 
-    def rows_callback(prop_name, row, col, model):
-        if prop_name == 'created_at':
-            worksheet.write(row, col, model.created_at.strftime("%d/%m/%y"))
-        else:
-            worksheet.write(row, col, getattr(model, prop_name))
-
     row = 0
     worksheet.write(row, 0, 'Выводы', header)
     row += 1
 
-    row = _write_models_to_excel(withdrawals, cols, worksheet, bold, row, rows_callback)
+    row = _write_models_to_excel(withdrawals, cols, worksheet, bold, row)
     row += 1
     worksheet.write(row, 0, 'Пополнения', header)
     row += 1
-    row = _write_models_to_excel(top_ups, cols, worksheet, bold, row, rows_callback)
+    row = _write_models_to_excel(top_ups, cols, worksheet, bold, row)
     row += 1
     worksheet.write(row, 0, 'Переводы в депозит', header)
     row += 1
-    row = _write_models_to_excel(deposit_transfers, cols, worksheet, bold, row, rows_callback)
+    row = _write_models_to_excel(deposit_transfers, cols, worksheet, bold, row)
     row += 1
     worksheet.write(row, 0, 'Переводы другим пользователям', header)
     row += 1
-    row = _write_models_to_excel(transfers_from, cols, worksheet, bold, row, rows_callback)
+    row = _write_models_to_excel(transfers_from, transfer_to, worksheet, bold, row)
     row += 1
     worksheet.write(row, 0, 'Переводы вам от других пользователей', header)
     row += 1
-    row = _write_models_to_excel(transfers_to, cols, worksheet, bold, row, rows_callback)
+    row = _write_models_to_excel(transfers_to, transfer_from, worksheet, bold, row)
 
     workbook.close()
     bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
@@ -69,7 +76,7 @@ def partners_excel(bot, user):
     }
 
     partners_list = user.partners_per_levels
-    filename = f'{_EXCEL_DOCS_FOLDER}/partners/{user.username}.xlsx'
+    filename = f'{_EXCEL_DOCS_FOLDER}/partners/{user.username}_partners.xlsx'
 
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()
@@ -88,7 +95,6 @@ def partners_excel(bot, user):
             col += 1
         row += 1
         col = 0
-        levels_percentage = tariffs.get_referral_levels_percentage()
         for partner in level:
             for prop_name in cols.values():
                 if prop_name == 'created_at':
@@ -101,15 +107,12 @@ def partners_excel(bot, user):
         level_number += 1
     row += 1
     col = 0
-    worksheet.write(row, col, 'Суммарный заработок с партнёров', bold)
-    col += 1
-    worksheet.write(row, col, total_partners_reward)
     workbook.close()
 
     bot.send_document(chat_id=user.chat_id, document=open(filename, 'rb'))
 
 
-def _write_models_to_excel(models, cols, worksheet, bold, row_start_with, callback):
+def _write_models_to_excel(models, cols, worksheet, bold, row_start_with):
     row = row_start_with
     col = 0
 
@@ -120,7 +123,15 @@ def _write_models_to_excel(models, cols, worksheet, bold, row_start_with, callba
     col = 0
     for model in models:
         for prop_name in cols.values():
-            callback(prop_name, row, col, model)
+            try:
+                if prop_name == 'created_at':
+                    worksheet.write(row, col, model.created_at.strftime("%d/%m/%y"))
+                elif prop_name == 'to_user' or prop_name == 'from_user':
+                    worksheet.write(row, col, f'@{getattr(model, prop_name).username}')
+                else:
+                    worksheet.write(row, col, getattr(model, prop_name))
+            except AttributeError:
+                continue
             col += 1
         row += 1
         col = 0

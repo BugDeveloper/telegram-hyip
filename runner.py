@@ -1,7 +1,7 @@
 import datetime
 import sys
 import telegram
-from telegram.ext import Updater, ConversationHandler
+from telegram.ext import Updater, ConversationHandler, MessageHandler, Filters
 import logging
 import bot_states
 import config
@@ -15,12 +15,9 @@ from job_callbacks import reward_users
 
 def main(args):
     mq_bot.init()
-    updater = telegram.ext.updater.Updater(bot=mq_bot.instance, request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
+    updater = telegram.ext.updater.Updater(bot=mq_bot.instance,
+                                           request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
     dispatcher = updater.dispatcher
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.INFO
-    )
 
     change_wallet_command_handler = command_handlers.change_wallet_initiation_handler()
     withdraw_command_handler = command_handlers.withdraw_command_handler()
@@ -62,7 +59,14 @@ def main(args):
                 transfer_balance_to_user_input_handler,
             ]
         },
-        fallbacks=[]
+        fallbacks=[],
+        timed_out_behavior=[
+            MessageHandler(
+                Filters.text,
+                error_handlers.timed_out_handler
+            )
+        ],
+        run_async_timeout=1.0
     )
 
     dispatcher.add_handler(conv_handler)
@@ -71,6 +75,11 @@ def main(args):
 
     j = updater.job_queue
     j.run_daily(reward_users, time=datetime.time(hour=3))
+
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
 
     if not len(args) or args[0] == 'polling':
         updater.start_polling()
@@ -86,7 +95,7 @@ def main(args):
     else:
         raise ValueError('Wrong args provided. Use either "polling" or "webhook".')
     app.run()
-    # updater.idle()
+    updater.idle()
 
 
 if __name__ == '__main__':

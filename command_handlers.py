@@ -32,12 +32,6 @@ def _start_command(bot, update, args):
             referral=referral
         )
 
-        if referral:
-            bot.send_message(
-                chat_id=referral.chat_id,
-                text=f'По вашей ссылке зарегистрировался новый партнёр: {username}'
-            )
-
         text = f'{first_name}, вы были успешно зарегистрированны в системе!'
 
     bot.send_message(chat_id=user.chat_id, text=text, reply_markup=keyboards.main_keyboard())

@@ -28,17 +28,16 @@ def is_signature_valid(signature, message, subscription_key):
 def top_up_balance():
     data = request.get_json()
 
-    # TODO Uncomment before real
-    # message = request.get_data()
-    # signatures = request.headers.get('X-Ethercast-Signature')
-    # signature512 = signatures.split('; ')[1][7:]
-    #
-    # if not is_signature_valid(
-    #         signature=signature512,
-    #         message=message,
-    #         subscription_key=_SUBSCRIPTION_KEY
-    # ):
-    #     return 'Nice try, motherfucker'
+    message = request.get_data()
+    signatures = request.headers.get('X-Ethercast-Signature')
+    signature512 = signatures.split('; ')[1][7:]
+
+    if not is_signature_valid(
+            signature=signature512,
+            message=message,
+            subscription_key=_SUBSCRIPTION_KEY
+    ):
+        return 'Nice try, motherfucker'
 
     if data['to'] != config.project_eth_address():
         print('Something is really wrong with ethercast')
@@ -118,7 +117,7 @@ def approve_withdrawal():
 @app.route('/withdrawals')
 @basic_auth.required
 def withdrawals():
-    withdrawals = Withdrawal.select(Withdrawal, User).where(Withdrawal.approved == False) \
+    withdrawals = Withdrawal.select(Withdrawal, User).where(not Withdrawal.approved) \
         .order_by(Withdrawal.created_at).join(User)
 
     return render_template(

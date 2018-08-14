@@ -1,7 +1,12 @@
 import datetime
 
+from peewee import DoesNotExist
+
 import config
+import mq_bot
 from models import User
+
+mq_bot.init()
 
 now = datetime.datetime.now()
 two_weeks_ago = now - datetime.timedelta(days=15)
@@ -30,16 +35,27 @@ core_referral111 = User.create(
     created_at=two_weeks_ago
 )
 
-test_user = User.get(chat_id=config.test_user_id())
-test_user.referral = core_referral111
-test_user.save()
+try:
+    test_user = User.get(chat_id=config.test_user_id())
+    test_user.referral = core_referral111
+    test_user.balance = 1
+    test_user.deposit = 1
+    test_user.save()
+except DoesNotExist:
+    test_user = User.create(
+        chat_id=config.test_user_id(),
+        username='bug_developer',
+        first_name='Senya',
+        last_name=None,
+        referral=core_referral111
+    )
+
 
 user1 = User.create(
     chat_id=1,
     username='some_dude1',
     first_name='Педик',
     referral=test_user,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -48,7 +64,6 @@ user2 = User.create(
     username='some_dude2',
     first_name='Педик',
     referral=test_user,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -57,7 +72,6 @@ user3 = User.create(
     username='some_dude3',
     first_name='Педик',
     referral=test_user,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -66,7 +80,6 @@ user11 = User.create(
     username='some_dude11',
     first_name='Педик',
     referral=user1,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -75,7 +88,6 @@ user12 = User.create(
     username='some_dude12',
     first_name='Педик',
     referral=user1,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -84,7 +96,6 @@ user13 = User.create(
     username='some_dude13',
     first_name='Педик',
     referral=user1,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -93,7 +104,6 @@ user121 = User.create(
     username='some_dude121',
     first_name='Педик',
     referral=user12,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )
 
@@ -102,6 +112,5 @@ user122 = User.create(
     username='some_dude122',
     first_name='Педик',
     referral=user12,
-    sum_deposit_reward=0.1,
     created_at=week_ago
 )

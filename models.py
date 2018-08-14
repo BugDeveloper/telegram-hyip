@@ -3,7 +3,7 @@ import peewee
 import playhouse
 from peewee import *
 from playhouse.hybrid import hybrid_property
-from playhouse.signals import post_save
+from playhouse.signals import post_save, pre_save
 import keyboards
 import lang
 import mq_bot
@@ -69,6 +69,14 @@ class User(AscensionModel):
         else:
             return tariffs.tariff_reward(tariffs.NO_TARIFF_INDEX)
 
+    @hybrid_property
+    def first_level_deposit(self):
+        return 0
+
+    @first_level_deposit.expression
+    def first_level_deposit(cls):
+        return User.select(fn.SUM(User.deposit)).where(User.referral == cls)
+
     @deposit_reward.expression
     def deposit_reward(cls):
         return Case(
@@ -131,10 +139,29 @@ class User(AscensionModel):
         return partners_list
 
 
+@post_save(sender=User)
+def on_save_handler(model_class, instance, created):
+    if created:
+        if instance.referral:
+            mq_bot.instance.send_message(
+                chat_id=instance.referral.chat_id,
+                text=f'По вашей ссылке зарегистрировался новый партнёр: {instance.username}'
+            )
+
+
 class DepositTransfer(AscensionModel):
     user = ForeignKeyField(User, on_delete='CASCADE', related_name='deposit_transfers', null=True)
     amount = peewee.FloatField()
     created_at = DateTimeField(default=datetime.datetime.now())
+
+
+@pre_save(sender=DepositTransfer)
+def on_save_handler(model_class, instance, created):
+    user = instance.user
+    amount = instance.amount
+
+    if user.balance < amount:
+        raise PermissionError()
 
 
 @post_save(sender=DepositTransfer)
@@ -154,22 +181,30 @@ class UserTransfer(AscensionModel):
     created_at = DateTimeField(default=datetime.datetime.now())
 
 
+@pre_save(sender=UserTransfer)
+def on_save_handler(model_class, instance, created):
+    amount = instance.amount
+    from_user = instance.from_user
+
+    if from_user.balance < amount:
+        raise PermissionError()
+
+
 @post_save(sender=UserTransfer)
 def on_save_handler(model_class, instance, created):
     from_user = instance.from_user
     to_user = instance.to_user
     amount = instance.amount
 
-    if from_user.balance > amount:
-        from_user.balance -= amount
-        from_user.save()
-        to_user.balance += amount
-        to_user.save()
+    from_user.balance -= amount
+    from_user.save()
+    to_user.balance += amount
+    to_user.save()
 
-        mq_bot.instance.send_message(
-            chat_id=to_user.chat_id,
-            text=lang.balance_transferred_from_user(amount, from_user.username),
-        )
+    mq_bot.instance.send_message(
+        chat_id=to_user.chat_id,
+        text=lang.balance_transferred_from_user(amount, from_user.username),
+    )
 
 
 class TopUp(AscensionModel):
@@ -187,7 +222,10 @@ def on_save_handler(model_class, instance, created):
         user.deposit += instance.amount
         user.save()
         Payments.update_levels_deposit(user, instance.amount)
-        mq_bot.instance.send_message(chat_id=user.chat_id, text=f'Ваш депозит был увеличен на {instance.amount} ETH.')
+        mq_bot.instance.send_message(
+            chat_id=user.chat_id,
+            text=f'Ваш депозит был увеличен на {instance.amount} ETH.'
+        )
 
 
 class Withdrawal(AscensionModel):
@@ -197,14 +235,21 @@ class Withdrawal(AscensionModel):
     created_at = DateTimeField(default=datetime.datetime.now())
 
 
+@pre_save(sender=Withdrawal)
+def on_save_handler(model_class, instance, created):
+    if created:
+        user = instance.user
+        if len(user.withdrawals.where(not Withdrawal.approved)) or user.balance < instance.amount:
+            raise PermissionError()
+
+
 @post_save(sender=Withdrawal)
 def on_save_handler(model_class, instance, created):
     user = instance.user
 
     if created:
-        if user.balance > instance.amount:
-            user.balance -= instance.amount
-            user.save()
+        user.balance -= instance.amount
+        user.save()
     elif instance.approved:
         mq_bot.instance.send_message(
             chat_id=user.chat_id,

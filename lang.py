@@ -101,7 +101,7 @@ def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
         return text
     text += f'Баланс: {user_balance:.7f} ETH. \n' \
             f'Процентная ставка: {user_reward * 100}% в день.\n' \
-            f'Суммарный заработок с депозита: {sum_deposit_reward:.7f} ETH.\n' \
+            f'Заработок с личного депозита: {sum_deposit_reward:.7f} ETH.\n' \
             'Для перевода средств из баланса в депозит введите команду /transfer_deposit.\n' \
             'Для перевода средст другому пользователю введите команду /transfer_user.'
     return text
