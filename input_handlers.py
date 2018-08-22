@@ -1,4 +1,6 @@
 import datetime
+
+import telegram
 from peewee import DoesNotExist
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CallbackQueryHandler
@@ -52,11 +54,10 @@ def notify_ban(bot, user_id, ban_hours):
 def _main_menu(bot, update, user_data):
     user_id = update.message.chat_id
 
-    if not _bans.get('user_id', None):
-        _bans['user_id'] = Ban()
+    if not _bans.get(user_id, None):
+        _bans[user_id] = Ban()
 
-    ban = _bans.get('user_id')
-
+    ban = _bans.get(user_id)
     if ban.banned():
         return bot_states.MAIN
 
@@ -178,15 +179,23 @@ class MainMenu:
     @run_async
     def top_up(bot, user):
         if user.wallet:
-            text = lang.top_up()
-            bot.send_message(chat_id=user.chat_id, text=text)
+            text = lang.top_up(user.wallet)
+            bot.send_message(
+                chat_id=user.chat_id,
+                text=text,
+            )
+            bot.send_message(
+                chat_id=user.chat_id,
+                text=lang.top_up_invest_wallet(),
+                parse_mode=telegram.ParseMode.MARKDOWN
+            )
             return bot_states.MAIN
         else:
             text = lang.wallet_not_set() + '\n' + lang.enter_new_wallet()
             bot.send_message(
                 chat_id=user.chat_id,
                 text=text,
-                reply_markup=keyboards.back_keyboard()
+                reply_markup=keyboards.back_keyboard(),
             )
             return bot_states.WALLET_CHANGE
 
@@ -203,7 +212,6 @@ class MainMenu:
     @staticmethod
     @run_async
     def help(bot, user):
-        reward_users(bot, None)
         bot.send_message(
             chat_id=user.chat_id,
             text=lang.help()

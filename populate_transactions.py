@@ -60,3 +60,10 @@ withdrawal = Withdrawal.create(
     created_at=week_ago,
     approved=False
 )
+
+
+withdrawal = Withdrawal.create(
+    user=second_user,
+    amount=uniform(0, 1.0),
+    approved=False
+)

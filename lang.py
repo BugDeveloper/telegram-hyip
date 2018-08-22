@@ -94,30 +94,29 @@ def wallet_successfully_set(wallet):
 
 def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
     text = f'Депозит: {user_deposit:.7f} ETH. \n'
-    minimal_eth_deposit_dec = tariffs.eth_minimal_deposit()
 
-    if user_deposit < minimal_eth_deposit_dec:
-        text += f'Минимальная сумма депозита для начисления процентов: {tariffs.eth_minimal_deposit()} ETH'
-        return text
     text += f'Баланс: {user_balance:.7f} ETH. \n' \
             f'Процентная ставка: {user_reward * 100}% в день.\n' \
-            f'Заработок с личного депозита: {sum_deposit_reward:.7f} ETH.\n' \
-            'Для перевода средств из баланса в депозит введите команду /transfer_deposit.\n' \
-            'Для перевода средст другому пользователю введите команду /transfer_user.'
+            f'Начальный депозит: {tariffs.eth_minimal_deposit()} ETH\n' \
+            'Перевод из баланса в депозит: /transfer_deposit.\n' \
+            'Перевод баланса пользователю: /transfer_user.'
     return text
 
 
 def top_up(wallet):
     return f'Ваш кошелёк: {wallet}\n' \
-           f'ETH адрес для инвестиций: {config.project_eth_address()}\n' \
-           f'Для увеличения депозита, переводите на этот адрес любую сумму.\n' \
-           'Чтобы изменить адрес ETH кошелька, введите команду /wallet .'
+           f'ETH адрес для пополнения депозита: ' \
+           'Изменить адрес ETH кошелька: /wallet.\n'
+
+
+def top_up_invest_wallet():
+    return f'*{config.project_eth_address()}*'
 
 
 def withdraw(wallet):
     return f'Ваш кошелёк: {wallet}.\n' \
-           'Чтобы изменить адрес ETH кошелька, введите команду /wallet .\n' \
-           'Для вывода средств используйте команду /withdraw.'
+           'Изменить адрес ETH кошелька: /wallet .\n' \
+           'Вывод средств: /withdraw.'
 
 
 def wallet_not_set():

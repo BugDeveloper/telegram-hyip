@@ -239,7 +239,7 @@ class Withdrawal(AscensionModel):
 def on_save_handler(model_class, instance, created):
     if created:
         user = instance.user
-        if len(user.withdrawals.where(not Withdrawal.approved)) or user.balance < instance.amount:
+        if len(user.withdrawals.where(Withdrawal.approved == False)) or user.balance < instance.amount:
             raise PermissionError()
 
 

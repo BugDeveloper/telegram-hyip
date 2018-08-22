@@ -1,12 +1,16 @@
 import datetime
+import logging
+import pickle
 import sys
+import threading
+import time
 import telegram
 from telegram.ext import Updater, ConversationHandler, MessageHandler, Filters
-import logging
+from telegram.utils.promise import Promise
 import bot_states
+import command_handlers
 import config
 import error_handlers
-import command_handlers
 import input_handlers
 import mq_bot
 from flask_app import app
@@ -14,6 +18,34 @@ from job_callbacks import reward_users
 
 
 def main(args):
+    def loadData():
+        try:
+            f = open('backup/conversations', 'rb')
+            conv_handler.conversations = pickle.load(f)
+            f.close()
+        except FileNotFoundError:
+            logging.error("Data file not found")
+        except Exception:
+            logging.error(sys.exc_info()[0])
+
+    def saveData():
+        resolved = dict()
+        for k, v in conv_handler.conversations.items():
+            if isinstance(v, tuple) and len(v) is 2 and isinstance(v[1], Promise):
+                try:
+                    new_state = v[1].result()
+                except:
+                    new_state = v[0]
+                resolved[k] = new_state
+            else:
+                resolved[k] = v
+        try:
+            f = open('backup/conversations', 'wb+')
+            pickle.dump(resolved, f)
+            f.close()
+        except:
+            logging.error(sys.exc_info()[0])
+
     mq_bot.init()
     updater = telegram.ext.updater.Updater(bot=mq_bot.instance,
                                            request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
@@ -59,7 +91,9 @@ def main(args):
                 transfer_balance_to_user_input_handler,
             ]
         },
-        fallbacks=[],
+        fallbacks=[
+
+        ],
         timed_out_behavior=[
             MessageHandler(
                 Filters.text,
@@ -94,8 +128,13 @@ def main(args):
         print('Webhook updater started')
     else:
         raise ValueError('Wrong args provided. Use either "polling" or "webhook".')
+    loadData()
     app.run()
     updater.idle()
+    print('DO NOT TURN OFF THE BUT UNTIL ITS DATA IS SAVED')
+    print('Saving data...')
+    saveData()
+    print('DATA SAVED.')
 
 
 if __name__ == '__main__':

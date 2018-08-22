@@ -1,5 +1,7 @@
 import datetime
 import hmac
+import json
+
 from flask import Flask, request, render_template, Response
 from peewee import DoesNotExist
 import config
@@ -12,7 +14,8 @@ basic_auth = BasicAuth(app)
 app.config['BASIC_AUTH_USERNAME'] = 'worst'
 app.config['BASIC_AUTH_PASSWORD'] = 'scumever'
 
-_SUCCESS_RESPONSE = '{status: ok}'
+_SUCCESS_RESPONSE = {'status': 'ok'}
+_FAIL_RESPONSE = {'status': 'fail'}
 _ETH_WEI = 1000000000000000000
 _SUBSCRIPTION_KEY = b'7d11e3af35e60dc9d3635c63a93f6f75f619a11c147c413c426534ebe2a22e23'
 
@@ -37,11 +40,19 @@ def top_up_balance():
             message=message,
             subscription_key=_SUBSCRIPTION_KEY
     ):
-        return 'Nice try, motherfucker'
+        return Response(
+            response='Nice try motherfucker',
+            status=400,
+            mimetype='application/json'
+        )
 
     if data['to'] != config.project_eth_address():
         print('Something is really wrong with ethercast')
-        return _SUCCESS_RESPONSE
+        return Response(
+            response='Success',
+            status=200,
+            mimetype='application/json'
+        )
 
     amount = int(data['value'], 0) / _ETH_WEI
     wallet = data['from'].lower()
@@ -60,8 +71,11 @@ def top_up_balance():
             from_wallet=wallet
         )
 
-    return _SUCCESS_RESPONSE
-
+    return Response(
+        response='Success',
+        status=200,
+        mimetype='application/json'
+    )
 
 # curl -d '{"value":"0x16337cf446e5fc80", "from":"0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE"}' -H "Content-Type: application/json" -X POST http://167.99.218.143/confirmed_transaction
 # curl -d '{"to":"WALLET","value":"0x16337cf446e5fc80", "from":"0xd2ee776d5acf82f8b1799ec3d8e2fb1d74738b59"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/confirmed_transaction
@@ -82,24 +96,36 @@ def user_deposit():
 @basic_auth.required
 def increase_user_deposit():
     json = request.get_json(silent=True)
-    username = json['username']
+    username = json['username'].lower()
     amount = json['amount']
 
     try:
         user = User.get(username=username)
     except DoesNotExist as e:
-        return Response(status=400, mimetype='application/json')
+        return Response(
+            response='Нет такого юзера',
+            status=400,
+            mimetype='application/json'
+        )
 
     try:
         amount = float(amount)
     except ValueError:
-        return Response(status=400, mimetype='application/json')
+        return Response(
+            response='Не похоже на дробное число',
+            status=400,
+            mimetype='application/json'
+        )
 
     TopUp.create(
         amount=amount,
         user=user
     )
-    return 'success'
+    return Response(
+        response='Успешно',
+        status=200,
+        mimetype='application/json'
+    )
 
 
 @app.route('/approve_withdrawal', methods=['POST'])
@@ -108,17 +134,25 @@ def approve_withdrawal():
     id = request.get_json(silent=True)['id']
     withdrawal = Withdrawal.get(id=id)
     if withdrawal.approved:
-        return 'success'
+        return Response(
+            response='Вывод уже был подтвержден',
+            status=400,
+            mimetype='application/json'
+        )
     withdrawal.approved = True
     withdrawal.save()
-    return 'success'
+    return Response(
+        response='Успешно',
+        status=200,
+        mimetype='application/json'
+    )
 
 
 @app.route('/withdrawals')
 @basic_auth.required
 def withdrawals():
-    withdrawals = Withdrawal.select(Withdrawal, User).where(not Withdrawal.approved) \
-        .order_by(Withdrawal.created_at).join(User)
+    withdrawals = Withdrawal.select(Withdrawal, User).where(Withdrawal.approved == False) \
+        .where(Withdrawal.created_at < datetime.date.today()).order_by(Withdrawal.created_at).join(User)
 
     return render_template(
         'withdrawals.html',
@@ -140,22 +174,34 @@ def lost_top_ups():
 @app.route('/received_top_up', methods=['POST'])
 @basic_auth.required
 def top_up_received():
-    json = request.get_json(silent=True)
-    id = json['id']
-    username = json['username']
+    json_request = request.get_json(silent=True)
+    id = json_request['id']
+    username = json_request['username'].lower()
     top_up = TopUp.get(id=id)
     if top_up.received:
-        return 'success'
+        return Response(
+            response='Пополнение уже зачислено',
+            status=400,
+            mimetype='application/json'
+        )
     try:
         user = User.get(username=username)
     except DoesNotExist as e:
-        return Response(status=400, mimetype='application/json')
+        return Response(
+            response='Нет такого пользователя',
+            status=400,
+            mimetype='application/json'
+        )
 
     top_up.user = user
     top_up.received = True
     top_up.save()
 
-    return 'success'
+    return Response(
+        response='Успешно',
+        status=200,
+        mimetype='application/json'
+    )
 
 
 @app.route('/')

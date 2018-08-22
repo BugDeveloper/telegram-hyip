@@ -31,25 +31,27 @@
   {% endfor %}
 </table>
 <script>
+
     function receivedTopUp(id) {
         var username = document.getElementById('username').value
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", '/received_top_up', true);
-        xhr.onreadystatechange = function (oEvent) {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    location.reload(true);
-                } else {
-                    document.getElementById("errors").textContent = "Не вводи хуйню";
-                }
-            }
-        };
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.send(JSON.stringify({
-        'id': id,
-        'username': username,
-        }));
-        window.location.reload();
+        $.ajax({
+          type: "POST",
+          url: "/received_top_up",
+          dataType: 'text',
+          contentType: 'application/json',
+          data: JSON.stringify({
+                "id": id,
+                "username": username
+            }),
+          success: function(msg) {
+                alert("Успех");
+                window.location.reload();
+          },
+          error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert('Ошибка: ' + XMLHttpRequest.responseText);
+          }
+        });
+
     }
 </script>
 </body>
