@@ -1,7 +1,5 @@
 import datetime
 import hmac
-import json
-
 from flask import Flask, request, render_template, Response
 from peewee import DoesNotExist
 import config
@@ -77,8 +75,8 @@ def top_up_balance():
         mimetype='application/json'
     )
 
-# curl -d '{"value":"0x16337cf446e5fc80", "from":"0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE"}' -H "Content-Type: application/json" -X POST http://167.99.218.143/confirmed_transaction
-# curl -d '{"to":"WALLET","value":"0x16337cf446e5fc80", "from":"0xd2ee776d5acf82f8b1799ec3d8e2fb1d74738b59"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/confirmed_transaction
+# curl -d '{"value":"0x16337cf446e5fc80", "from":"0x32be343b94f860124dc4fee278fdcbd38c102d82"}' -H "Content-Type: application/json" -X POST http://167.99.218.143/confirmed_transaction
+# curl -d '{"to":"0x32Be343B94f860124dC4fEe278FDCBD38C102D88","value":"0x16337cf446e5fc80", "from":"0x32be343b94f860124dc4fee278fdcbd38c102d82"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/confirmed_transaction
 
 class ValidationError(Exception):
     pass

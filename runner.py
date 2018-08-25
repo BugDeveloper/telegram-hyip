@@ -130,7 +130,7 @@ def main(args):
         raise ValueError('Wrong args provided. Use either "polling" or "webhook".')
     loadData()
     app.run()
-    updater.idle()
+    updater.stop()
     print('DO NOT TURN OFF THE BUT UNTIL ITS DATA IS SAVED')
     print('Saving data...')
     saveData()
