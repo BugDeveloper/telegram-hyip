@@ -1,8 +1,12 @@
 import flask_app
 from flask_app import saveData
 
+workers = 2
 
-def worker_exit(server, worker):
-    print('SHUTTING DOWN...')
+
+def on_exit(server):
+    print('SHUTTING DOWN')
     saveData()
-    print('CONVERSATION DATA SAVED')
+    flask_app.stop_updater()
+    print('CONVERSATION DATA SAVED, PRESS CTRL + Z TO SHUT DOWN')
+    server.stop()

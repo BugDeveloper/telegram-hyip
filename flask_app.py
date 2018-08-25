@@ -60,13 +60,25 @@ def saveData():
     except:
         logging.error(sys.exc_info()[0])
 
-def exit():
-    updater = None
 
 mq_bot.init()
+
+
+def stop_updater():
+    print('STOPPING BOT UPDATES')
+    updater.stop()
+    print('BOT UPDATES STOPPED')
+
+
+def exit_bot():
+    import os
+    os._exit(1)
+
+
 updater = telegram.ext.updater.Updater(
     bot=mq_bot.instance,
-    request_kwargs={'read_timeout': 6, 'connect_timeout': 7}
+    request_kwargs={'read_timeout': 6, 'connect_timeout': 7},
+    user_sig_handler=exit_bot
 )
 dispatcher = updater.dispatcher
 

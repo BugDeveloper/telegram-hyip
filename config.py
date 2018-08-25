@@ -1,13 +1,8 @@
 
-_ETH_ADDRESS = '0x32Be343B94f860124dC4fEe278FDCBD38C102D88'
+_ETH_ADDRESS = '0xbe8C1eA54CFe0b8b0c227396C9e562507c024481'
 _TOKEN = '599262955:AAH-B7vZ4udSVDJlUVjOCNKyMFy5oKc3xpo'
 _BOT_USERNAME = 'the_ascension_bot'
 _TEST_USER_ID = 114616282
-_DEBUG = True
-
-
-def is_debug_mode():
-    return _DEBUG
 
 
 def test_user_id():
