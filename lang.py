@@ -144,4 +144,4 @@ def create_withdrawal(balance):
 
 
 def help():
-    return f'Для начисления процентов сумма депозита должна быть не менее {tariffs.eth_minimal_deposit()} ETH.'
+    return 'https://telegra.ph/Dobro-pozhalovat-v-ICO-DAY-08-25'
