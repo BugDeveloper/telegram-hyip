@@ -28,7 +28,7 @@ app.config['BASIC_AUTH_PASSWORD'] = 'scumever'
 _SUCCESS_RESPONSE = {'status': 'ok'}
 _FAIL_RESPONSE = {'status': 'fail'}
 _ETH_WEI = 1000000000000000000
-_SUBSCRIPTION_KEY = b'7d11e3af35e60dc9d3635c63a93f6f75f619a11c147c413c426534ebe2a22e23'
+_SUBSCRIPTION_KEY = b'8dabad7465a3cc6b6873bf717f0e04e35d8972de89dada7a6f225888b9ee87de'
 
 
 def loadData():
