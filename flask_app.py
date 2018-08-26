@@ -191,11 +191,11 @@ def top_up_balance():
             mimetype='application/json'
         )
 
-    if data['to'] != config.project_eth_address():
+    if data['to'].lower() != config.project_eth_address():
         print('Something is really wrong with ethercast')
         return Response(
             response='Success',
-            status=200,
+            status=400,
             mimetype='application/json'
         )
 

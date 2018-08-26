@@ -18,4 +18,4 @@ def token():
 
 
 def project_eth_address():
-    return _ETH_ADDRESS
+    return _ETH_ADDRESS.lower()
