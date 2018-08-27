@@ -2,6 +2,7 @@ import datetime
 import hmac
 import logging
 import pickle
+from telegram.ext import messagequeue as mq
 import sys
 from pathlib import Path
 import telegram
@@ -9,6 +10,7 @@ from flask import Flask, request, render_template, Response
 from peewee import DoesNotExist
 from telegram.ext import ConversationHandler, MessageHandler, Filters
 from telegram.utils.promise import Promise
+from telegram.utils.request import Request as TelegramRequest
 import bot_states
 import command_handlers
 import config
@@ -59,6 +61,7 @@ def saveData():
         f.close()
     except:
         logging.error(sys.exc_info()[0])
+    print('CONVERSATION DATA SAVED')
 
 
 def stop_updater():
@@ -67,10 +70,12 @@ def stop_updater():
     print('BOT UPDATES STOPPED')
 
 
-mq_bot.init()
+q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
+tel_request = TelegramRequest(con_pool_size=8)
+mq_bot = mq_bot.MQBot(token=config.token(), request=tel_request, mqueue=q)
 
 updater = telegram.ext.updater.Updater(
-    bot=mq_bot.instance,
+    bot=mq_bot,
     request_kwargs={'read_timeout': 6, 'connect_timeout': 7},
 )
 dispatcher = updater.dispatcher
@@ -415,4 +420,6 @@ def statistics():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(threaded=True)
+    stop_updater()
+    saveData()

@@ -145,7 +145,7 @@ class User(AscensionModel):
 def on_save_handler(model_class, instance, created):
     if created:
         if instance.referral:
-            mq_bot.instance.send_message(
+            Dispatcher.get_instance().bot.send_message(
                 chat_id=instance.referral.chat_id,
                 text=f'По вашей ссылке зарегистрировался новый партнёр: {instance.username}'
             )
@@ -203,7 +203,7 @@ def on_save_handler(model_class, instance, created):
     to_user.balance += amount
     to_user.save()
 
-    mq_bot.instance.send_message(
+    Dispatcher.get_instance().bot.send_message(
         chat_id=to_user.chat_id,
         text=lang.balance_transferred_from_user(amount, from_user.username),
     )
@@ -229,10 +229,6 @@ def on_save_handler(model_class, instance, created):
             chat_id=user.chat_id,
             text=f'Ваш депозит был увеличен на {instance.amount} ETH.'
         )
-        # mq_bot.instance.send_message(
-        #     chat_id=user.chat_id,
-        #     text=f'Ваш депозит был увеличен на {instance.amount} ETH.'
-        # )
 
 
 class Withdrawal(AscensionModel):
@@ -258,7 +254,7 @@ def on_save_handler(model_class, instance, created):
         user.balance -= instance.amount
         user.save()
     elif instance.approved:
-        mq_bot.instance.send_message(
+        Dispatcher.get_instance().bot.send_message(
             chat_id=user.chat_id,
             text=f'Ваш перевод на сумму {instance.amount} ETH был подтвержден. '
                  f'Средства будут переведены в кратчайшие сроки.'

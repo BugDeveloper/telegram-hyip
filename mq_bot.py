@@ -1,14 +1,5 @@
 import telegram
 from telegram.ext import messagequeue as mq
-from telegram.utils.request import Request
-import config
-
-
-def init():
-    global instance
-    q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
-    request = Request(con_pool_size=8)
-    instance = MQBot(token=config.token(), request=request, mqueue=q)
 
 
 class MQBot(telegram.bot.Bot):
