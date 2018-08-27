@@ -225,7 +225,7 @@ def on_save_handler(model_class, instance, created):
         user.save()
         Payments.update_levels_deposit(user, instance.amount)
 
-        Dispatcher.bot.send_message(
+        Dispatcher.get_instance().bot.send_message(
             chat_id=user.chat_id,
             text=f'Ваш депозит был увеличен на {instance.amount} ETH.'
         )
