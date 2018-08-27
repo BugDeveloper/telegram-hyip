@@ -4,6 +4,8 @@ import playhouse
 from peewee import *
 from playhouse.hybrid import hybrid_property
 from playhouse.signals import post_save, pre_save
+from telegram.ext import Dispatcher
+
 import keyboards
 import lang
 import mq_bot
@@ -222,10 +224,15 @@ def on_save_handler(model_class, instance, created):
         user.deposit += instance.amount
         user.save()
         Payments.update_levels_deposit(user, instance.amount)
-        mq_bot.instance.send_message(
+
+        Dispatcher.bot.send_message(
             chat_id=user.chat_id,
             text=f'Ваш депозит был увеличен на {instance.amount} ETH.'
         )
+        # mq_bot.instance.send_message(
+        #     chat_id=user.chat_id,
+        #     text=f'Ваш депозит был увеличен на {instance.amount} ETH.'
+        # )
 
 
 class Withdrawal(AscensionModel):

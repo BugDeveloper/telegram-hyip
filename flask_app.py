@@ -61,26 +61,19 @@ def saveData():
         logging.error(sys.exc_info()[0])
 
 
-mq_bot.init()
-
-
 def stop_updater():
     print('STOPPING BOT UPDATES')
     updater.stop()
     print('BOT UPDATES STOPPED')
 
 
-def exit_bot():
-    import os
-    os._exit(1)
-
+mq_bot.init()
 
 updater = telegram.ext.updater.Updater(
     bot=mq_bot.instance,
     request_kwargs={'read_timeout': 6, 'connect_timeout': 7},
-    user_sig_handler=exit_bot
 )
-dispatcher = updater.dispatcher
+
 
 change_wallet_command_handler = command_handlers.change_wallet_initiation_handler()
 withdraw_command_handler = command_handlers.withdraw_command_handler()

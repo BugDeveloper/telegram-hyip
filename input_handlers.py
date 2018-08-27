@@ -255,7 +255,7 @@ def _transfer_balance_to_user(bot, update):
         bot.send_message(chat_id=chat_id, text=lang.invalid_input())
         return bot_states.TRANSFER_BALANCE_TO_USER
 
-    username = transfer_data[0]
+    username = transfer_data[0].lower()
 
     user = User.get(chat_id=chat_id)
 
