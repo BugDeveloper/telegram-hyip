@@ -73,7 +73,7 @@ updater = telegram.ext.updater.Updater(
     bot=mq_bot.instance,
     request_kwargs={'read_timeout': 6, 'connect_timeout': 7},
 )
-
+dispatcher = updater.dispatcher
 
 change_wallet_command_handler = command_handlers.change_wallet_initiation_handler()
 withdraw_command_handler = command_handlers.withdraw_command_handler()
