@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 import telegram
 from flask import Flask, request, render_template, Response
-from peewee import DoesNotExist
+from peewee import DoesNotExist, fn
 from telegram.ext import ConversationHandler, MessageHandler, Filters
 from telegram.utils.promise import Promise
 from telegram.utils.request import Request as TelegramRequest
@@ -244,8 +244,8 @@ def increase_user_deposit():
     amount = json['amount']
 
     try:
-        user = User.get(username=username)
-    except DoesNotExist as e:
+        user = User.select().where(fn.Lower(User.username) == username)[0]
+    except IndexError as e:
         return Response(
             response='Нет такого юзера',
             status=400,
@@ -329,8 +329,9 @@ def top_up_received():
             mimetype='application/json'
         )
     try:
-        user = User.get(username=username)
-    except DoesNotExist as e:
+
+        user = User.select().where(fn.Lower(User.username) == username)[0]
+    except IndexError as e:
         return Response(
             response='Нет такого пользователя',
             status=400,
