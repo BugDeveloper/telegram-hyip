@@ -22,11 +22,16 @@ def reward_users(bot, job):
     users = User.select().where(User.deposit >= tariffs.eth_minimal_deposit())
 
     for user in users:
-        reward = user.deposit * user.deposit_reward \
-                 + user.first_level_partners_deposit * user.deposit_reward * levels_percentage[0] \
-                 + user.second_level_partners_deposit * user.deposit_reward * levels_percentage[1] \
-                 + user.third_level_partners_deposit * user.deposit_reward * levels_percentage[2]
+        deposit_reward = user.deposit * user.deposit_reward
+        first_level_reward = user.first_level_partners_deposit * user.deposit_reward * levels_percentage[0]
+        second_level_reward = user.second_level_partners_deposit * user.deposit_reward * levels_percentage[1]
+        third_level_reward = user.third_level_partners_deposit * user.deposit_reward * levels_percentage[2]
+
         bot.send_message(
             chat_id=user.chat_id,
-            text=f'Вы получили начислений на сумму {reward:.7f} ETH'
+            text=f'Вы получили начисления:\n'
+                 f'Депозит: {deposit_reward:.7f} ETH\n'
+                 f'1 уровень: {first_level_reward:.7f} ETH\n'
+                 f'2 уровень: {second_level_reward:.7f} ETH\n'
+                 f'3 уровень: {third_level_reward:.7f} ETH\n'
         )
