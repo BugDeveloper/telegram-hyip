@@ -260,7 +260,7 @@ def _transfer_balance_to_user(bot, update):
     user = User.get(chat_id=chat_id)
 
     try:
-        user_to_transfer = User.select().where(fn.Lower(User.username) == username)[0]
+        user_to_transfer = User.get(fn.Lower(User.username) == username)
         amount = _validate_transaction(user, transfer_data[1])
     except ValueError:
         bot.send_message(chat_id=chat_id, text=lang.invalid_input())
@@ -271,7 +271,7 @@ def _transfer_balance_to_user(bot, update):
     except NotEnoughBalance:
         bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
         return bot_states.TRANSFER_BALANCE_TO_USER
-    except IndexError:
+    except DoesNotExist:
         bot.send_message(chat_id=chat_id, text=lang.user_not_registered())
         return bot_states.TRANSFER_BALANCE_TO_USER
 
