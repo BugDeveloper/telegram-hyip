@@ -1,6 +1,7 @@
 import datetime
 import hmac
 import logging
+import os
 import pickle
 from telegram.ext import messagequeue as mq
 import sys
@@ -69,6 +70,21 @@ def stop_updater():
     updater.stop()
     print('BOT UPDATES STOPPED')
 
+
+dirname = os.path.dirname(__file__)
+docs = os.path.join(dirname, 'docs')
+partners = os.path.join(dirname, 'docs/partners')
+transactions = os.path.join(dirname, 'docs/transactions')
+
+
+def create_folder(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+create_folder(docs)
+create_folder(partners)
+create_folder(transactions)
 
 q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
 tel_request = TelegramRequest(con_pool_size=8)
