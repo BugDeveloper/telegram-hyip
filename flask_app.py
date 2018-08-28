@@ -260,8 +260,8 @@ def increase_user_deposit():
     amount = json['amount']
 
     try:
-        user = User.select().where(fn.Lower(User.username) == username)[0]
-    except IndexError as e:
+        user = User.get(fn.Lower(User.username) == username)
+    except DoesNotExist as e:
         return Response(
             response='Нет такого юзера',
             status=400,
