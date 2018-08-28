@@ -1,7 +1,7 @@
 import datetime
 
 import telegram
-from peewee import DoesNotExist
+from peewee import DoesNotExist, fn
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import run_async, RegexHandler, MessageHandler, Filters, CallbackQueryHandler
 import bot_states
@@ -260,7 +260,7 @@ def _transfer_balance_to_user(bot, update):
     user = User.get(chat_id=chat_id)
 
     try:
-        user_to_transfer = User.get(username=username)
+        user_to_transfer = User.where(fn.Lower(User.username) == username)
         amount = _validate_transaction(user, transfer_data[1])
     except ValueError:
         bot.send_message(chat_id=chat_id, text=lang.invalid_input())
