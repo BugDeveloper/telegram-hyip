@@ -5,9 +5,9 @@ _MINIMAL_ETH_WITHDRAW = 0.0125
 
 _TARIFF_REWARDS = {
     0: 0,
-    1: 0.01,
-    2: 0.015,
-    3: 0.02
+    1: 0.006,
+    2: 0.008,
+    3: 0.01
 }
 
 _PRECISION = '.0001'

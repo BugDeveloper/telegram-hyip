@@ -150,7 +150,7 @@ class MainMenu:
             ],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        text = lang.partners(user.chat_id, user.referral)
+        text = lang.partners(user, user.referral)
         bot.send_message(
             chat_id=user.chat_id,
             text=text,

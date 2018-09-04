@@ -69,17 +69,17 @@ def minimal_withdraw_amount():
     return f'Сумма перевода должна превышать {tariffs.minimal_eth_withdraw()} ETH.'
 
 
-def partners(user_id, user_invited_by=None):
+def partners(user, user_invited_by=None):
     partners_info = ''
     if user_invited_by:
         partners_info = 'Вы были приглашены пользователем: @{}\n'.format(user_invited_by.username)
-    referral_link = 'https://telegram.me/' + config.bot_username() + '?start=' + str(user_id)
+    referral_link = 'https://telegram.me/' + config.bot_username() + '?start=' + str(user.chat_id)
     partners_info += f'Ваша реферальная ссылка: {referral_link}\n'
 
     level_percentage = tariffs.get_referral_levels_percentage()
 
     for idx, percentage in enumerate(level_percentage):
-        partners_info += f'Уровень {idx + 1} - {percentage * 100}%\n'
+        partners_info += f'Уровень {idx + 1} - {percentage * 100 * user.deposit_reward}% в день\n'
 
     return partners_info
 
@@ -105,8 +105,8 @@ def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
 
 def top_up(wallet):
     return f'Ваш кошелёк: {wallet}\n' \
-           f'ETH адрес для пополнения депозита: ' \
-           'Изменить адрес ETH кошелька: /wallet.\n'
+           'Изменить адрес ETH кошелька: /wallet.\n'\
+            f'ETH адрес для пополнения депозита: '
 
 
 def top_up_invest_wallet():
