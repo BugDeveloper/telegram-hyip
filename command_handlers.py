@@ -12,6 +12,12 @@ def _start_command(bot, update, args):
     first_name = update.message.chat.first_name
     username = update.message.from_user.username
 
+    if not username:
+        text = f'{first_name}, вы не установили имя пользователя telegram.' \
+               f' Пожалуйста установите поле в настройках и введите команду /start ещё раз.'
+        bot.send_message(chat_id=chat_id, text=text)
+        return bot_states.MAIN
+
     try:
         user = User.get(chat_id=chat_id)
         text = f'{first_name}, вы уже зарегистрированны в системе. Добро пожаловать домой!'
