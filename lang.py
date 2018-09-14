@@ -144,4 +144,4 @@ def create_withdrawal(balance):
 
 
 def help():
-    return 'https://telegra.ph/Dobro-pozhalovat-v-ICO-DAY-08-25'
+    return 'https://telegra.ph/ICO-DAY-09-14'
