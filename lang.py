@@ -124,7 +124,7 @@ def wallet_not_set():
 
 
 def enter_new_wallet():
-    return 'Введите новый адрес для вывода:'
+    return 'Введите адрес вашего ETH кошелька:'
 
 
 def transfer_balance_to_deposit(balance):
