@@ -311,13 +311,13 @@ def approve_withdrawal():
 @app.route('/withdrawals')
 @basic_auth.required
 def withdrawals():
-    withdrawals = Withdrawal.select(Withdrawal, User).where(Withdrawal.approved == False) \
+    withdrawals = Withdrawal.select(Withdrawal, User, fn.SUM(Withdrawal).alias('sum_amount'))\
+        .where(Withdrawal.approved == False) \
         .where(Withdrawal.created_at < datetime.date.today()).order_by(Withdrawal.created_at).join(User)
 
     return render_template(
         'withdrawals.html',
         withdrawals=withdrawals,
-        sum_withdraw=Withdrawal.select(fn.SUM(Withdrawal.amount)).scalar()
     )
 
 
