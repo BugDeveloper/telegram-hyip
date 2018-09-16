@@ -316,7 +316,8 @@ def withdrawals():
 
     return render_template(
         'withdrawals.html',
-        withdrawals=withdrawals
+        withdrawals=withdrawals,
+        sum_withdraw=Withdrawal.select(fn.SUM(Withdrawal.amount))
     )
 
 
