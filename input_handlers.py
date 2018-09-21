@@ -7,7 +7,6 @@ import bot_states
 import keyboards
 import lang
 import excel_generator
-from job_callbacks import reward_users
 from models import User, TopUp, Withdrawal, UserTransfer, DepositTransfer
 from eth_utils import is_address as is_eth_address
 from ban import Ban
@@ -225,7 +224,6 @@ class MainMenu:
             text=lang.help()
         )
         # TODO Erase
-        reward_users(bot, None)
         return bot_states.MAIN
 
 
