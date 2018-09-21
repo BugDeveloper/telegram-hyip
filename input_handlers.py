@@ -1,5 +1,4 @@
 import datetime
-
 import telegram
 from peewee import DoesNotExist, fn
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -68,6 +67,15 @@ def _main_menu(bot, update, user_data):
 
     try:
         user = User.get(chat_id=user_id)
+        username = update.message.from_user.username
+        if not username:
+            text = f'{update.message.chat.first_name}, вы не установили имя пользователя telegram.' \
+                    f'Пожалуйста установите поле в настройках чтобы продолжить.'
+            bot.send_message(user_id, text)
+            return bot_states.MAIN
+        if user.username != username:
+            user.username = username
+            user.save()
     except DoesNotExist as e:
         bot.send_message(user_id, lang.not_registered())
         return bot_states.MAIN
@@ -216,6 +224,8 @@ class MainMenu:
             chat_id=user.chat_id,
             text=lang.help()
         )
+        # TODO Erase
+        reward_users(bot, None)
         return bot_states.MAIN
 
 

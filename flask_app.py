@@ -312,11 +312,14 @@ def approve_withdrawal():
 @basic_auth.required
 def withdrawals():
     withdrawals = Withdrawal.select(Withdrawal, User)\
-        .where(Withdrawal.approved == False) \
-        .where(Withdrawal.created_at < datetime.date.today()).order_by(Withdrawal.created_at).join(User)
+        .where(Withdrawal.approved == False).order_by(Withdrawal.created_at).join(User)
+
+    total_sum = Withdrawal.select(fn.COALESCE(fn.SUM(Withdrawal.amount), 0).alias('total_sum'))\
+        .where(Withdrawal.approved == False).execute()
 
     return render_template(
         'withdrawals.html',
+        total_sum=total_sum[0].total_sum,
         withdrawals=withdrawals,
     )
 
