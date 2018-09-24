@@ -72,8 +72,8 @@
                 </a>
             </td>
         <td style="padding:0 15px 0 15px;">{{ user.last_name }}</td>
-        <td style="padding:0 15px 0 15px;">{{ user.deposit|round(7, 'floor') }}</td>
-        <td style="padding:0 15px 0 15px;">{{ user.balance|round(7, 'floor') }}</td>
+        <td style="padding:0 15px 0 15px;">{{ "%.7f" % user.deposit }}</td>
+        <td style="padding:0 15px 0 15px;">{{ "%.7f" %  user.balance }}</td>
         <td style="padding:0 15px 0 15px;">{{ user.wallet }}</td>
         <td style="padding:0 15px 0 15px;">
             {% if user.referral %}
