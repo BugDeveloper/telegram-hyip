@@ -33,11 +33,11 @@ def back_to_main_menu():
 
 
 def balance_transferred_to_user(amount, to_user):
-    return f'Сумма в {amount:.7f} ETH успешно переведена в пользователю @{to_user}.'
+    return f'Сумма в {amount:.7f} ETH успешно переведена в пользователю {to_user}.'
 
 
 def balance_transferred_from_user(amount, from_user):
-    return f'Пользователь @{from_user} ETH перевёл вам на баланс {amount} ETH.'
+    return f'Пользователь {from_user} ETH перевёл вам на баланс {amount} ETH.'
 
 
 def balance_transferred_to_deposit(amount):
@@ -69,11 +69,11 @@ def minimal_withdraw_amount():
     return f'Сумма перевода должна превышать {tariffs.minimal_eth_withdraw()} ETH.'
 
 
-def partners(user, user_invited_by=None):
+def partners(user, bot_username, user_invited_by=None):
     partners_info = ''
     if user_invited_by:
-        partners_info = 'Вы были приглашены пользователем: @{}\n'.format(user_invited_by.username)
-    referral_link = 'https://telegram.me/' + config.bot_username() + '?start=' + str(user.chat_id)
+        partners_info = f'Вы были приглашены пользователем: {user_invited_by}\n'
+    referral_link = f'https://telegram.me/{bot_username}?start={str(user.chat_id)}'
     partners_info += f'Ваша реферальная ссылка: {referral_link}\n'
 
     level_percentage = tariffs.get_referral_levels_percentage()

@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 <label>
-    User
+    User id
 </label>
-<input id="username">
+<input id="user_id">
 <label>
     Sum
 </label>
 <input id="amount">
-<button type="button" onclick="increaseDeposit()">Одобрить</button>
+<button type="button" onclick="increaseDeposit()">Пополнить</button>
 <script>
     function increaseDeposit() {
-        var username = document.getElementById('username').value
+        var user_id = document.getElementById('user_id').value
         var amount = document.getElementById('amount').value
 
         $.ajax({
@@ -21,7 +21,7 @@
           contentType: 'application/json',
           data: JSON.stringify({
                 "amount": amount,
-                "username": username
+                "user_id": user_id
           }),
           success: function(msg) {
                 alert("Успех");

@@ -31,7 +31,7 @@ def transactions_excel(bot, user):
     transfers_from = user.transfers_from
     transfers_to = user.transfers_to
 
-    filename = f'{_EXCEL_DOCS_FOLDER}/transactions/{user.username}_transactions.xlsx'
+    filename = f'{_EXCEL_DOCS_FOLDER}/transactions/{user}_transactions.xlsx'
 
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()
@@ -76,7 +76,7 @@ def partners_excel(bot, user):
     }
 
     partners_list = user.partners_per_levels
-    filename = f'{_EXCEL_DOCS_FOLDER}/partners/{user.username}_partners.xlsx'
+    filename = f'{_EXCEL_DOCS_FOLDER}/partners/{user}_partners.xlsx'
 
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()

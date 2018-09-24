@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block content %}
+<div  style="text-align:center">
+
+    <form action="/user_lookup">
+  <label>Id</label><br>
+  <input type="text" name="id">
+  <br>
+  <label>Username</label><br>
+  <input type="text" name="username">
+  <br><br>
+  <input type="submit" value="Submit">
+</form>
+
+</div>
+<br>
+<table style="max-width: 1500px; margin: auto;">
+    <tr>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Id
+            </b>
+        </td>
+                <td style="padding:0 15px 0 15px;">
+            <b>
+                Username
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                First name
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Last name
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Deposit
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Balance
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Wallet
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Referral
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Created at
+            </b>
+        </td>
+    </tr>
+    <tr>
+    {% for user in users %}
+        <td style="padding:0 15px 0 15px;">{{ user.chat_id }}</td>
+        <td style="padding:0 15px 0 15px;">{{ user.username }}</td>
+            <td style="padding:0 15px 0 15px;">
+                <a href="/user_lookup?id={{user.chat_id}}">
+                    {{ user.first_name }}
+                </a>
+            </td>
+        <td style="padding:0 15px 0 15px;">{{ user.last_name }}</td>
+        <td style="padding:0 15px 0 15px;">{{ user.deposit }}</td>
+        <td style="padding:0 15px 0 15px;">{{ user.balance }}</td>
+        <td style="padding:0 15px 0 15px;">{{ user.wallet }}</td>
+        <td style="padding:0 15px 0 15px;">
+            {% if user.referral %}
+            <a href="/user_lookup?id={{user.referral.chat_id}}">
+                {{ user.referral }}
+            </a>
+            {% else %}
+                Нет
+            {% endif %}
+        </td>
+        <td style="padding:0 15px 0 15px;">{{ user.created_at.strftime('%Y %B %d %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% if prev_link %}
+<a href="{{ prev_link }}">
+    Prev
+</a>
+{% endif %}
+
+{% if next_link %}
+<a href="{{ next_link }}">
+    Next
+</a>
+{% endif %}
+</body>
+</html>
+{% endblock %}

@@ -24,7 +24,8 @@
         <td style="padding:0 15px 0 15px;">{{ top_up.amount }}</td>
         <td style="padding:0 15px 0 15px;">{{ top_up.created_at.strftime('%Y %B %d %H:%M') }}</td>
         <td>
-            <input id="username">
+            <label>User id</label>
+            <input id="user_id">
             <button type="button" onclick="receivedTopUp({{top_up.id}})">Зачислить</button>
         </td>
         <td>
@@ -55,7 +56,7 @@
     }
 
     function receivedTopUp(id) {
-        var username = document.getElementById('username').value
+        var user_id = document.getElementById('user_id').value
         $.ajax({
           type: "POST",
           url: "/received_top_up",
@@ -63,7 +64,7 @@
           contentType: 'application/json',
           data: JSON.stringify({
                 "id": id,
-                "username": username
+                "user_id": user_id
             }),
           success: function(msg) {
                 alert("Успех");

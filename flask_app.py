@@ -187,6 +187,7 @@ def is_signature_valid(signature, message, subscription_key):
 
 
 @app.route('/confirmed_transaction', methods=['POST'])
+@basic_auth.required
 def top_up_balance():
     data = request.get_json()
 
@@ -256,11 +257,18 @@ def user_deposit():
 @basic_auth.required
 def increase_user_deposit():
     json = request.get_json(silent=True)
-    username = json['username'].lower()
+    user_id = json['user_id']
     amount = json['amount']
-
     try:
-        user = User.get(fn.Lower(User.username) == username)
+        user_id = int(user_id)
+    except TypeError:
+        return Response(
+            response='Неправильный id пользователя',
+            status=400,
+            mimetype='application/json'
+        )
+    try:
+        user = User.get(User.chat_id == user_id)
     except DoesNotExist as e:
         return Response(
             response='Нет такого юзера',
@@ -350,12 +358,60 @@ def top_up_delete():
     )
 
 
+@app.route('/user_lookup')
+@basic_auth.required
+def user_lookup():
+    ITEMS_PER_PAGE = 15
+    page = request.args.get('page')
+    id = request.args.get('id')
+    username = request.args.get('username')
+    if not page:
+        page = 1
+    users = User.select()
+    users_count = users.count()
+    if id:
+        try:
+            id = int(id)
+            users = users.where(User.chat_id == id)
+        except ValueError:
+            pass
+    if username:
+        users = users.where(User.username.contains(username))
+
+    users = users.order_by(-User.chat_id).paginate(page, ITEMS_PER_PAGE)
+
+    if (page + 1) * ITEMS_PER_PAGE - users_count > ITEMS_PER_PAGE:
+        next_link = None
+    else:
+        next_link = f'/user_lookup?page={page + 1}'
+
+    if page - 1 <= 0:
+        prev_link = None
+    else:
+        prev_link = f'/user_lookup?page={page - 1}'
+
+    return render_template(
+        'user_lookup.html',
+        users=users,
+        next_link=next_link,
+        prev_link=prev_link
+    )
+
+
 @app.route('/received_top_up', methods=['POST'])
 @basic_auth.required
 def top_up_received():
     json_request = request.get_json(silent=True)
     id = json_request['id']
-    username = json_request['username'].lower()
+    user_id = json_request['user_id']
+    try:
+        user_id = int(user_id)
+    except TypeError:
+        return Response(
+            response='Неверный id пользователя',
+            status=400,
+            mimetype='application/json'
+        )
     top_up = TopUp.get(id=id)
     if top_up.received:
         return Response(
@@ -364,8 +420,7 @@ def top_up_received():
             mimetype='application/json'
         )
     try:
-
-        user = User.get(fn.Lower(User.username) == username)
+        user = User.get(User.chat_id == user_id)
     except DoesNotExist as e:
         return Response(
             response='Нет такого пользователя',

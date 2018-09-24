@@ -67,11 +67,6 @@ def _main_menu(bot, update, user_data):
     try:
         user = User.get(chat_id=user_id)
         username = update.message.from_user.username
-        if not username:
-            text = f'{update.message.chat.first_name}, вы не установили имя пользователя telegram.' \
-                    f'Пожалуйста установите поле в настройках чтобы продолжить.'
-            bot.send_message(user_id, text)
-            return bot_states.MAIN
         if user.username != username:
             user.username = username
             user.save()
@@ -150,14 +145,13 @@ class MainMenu:
     @staticmethod
     @run_async
     def partners(bot, user):
-
         keyboard = [
             [
                 InlineKeyboardButton("Скачать excel таблицу партнёров", callback_data='partners_excel'),
             ],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        text = lang.partners(user, user.referral)
+        text = lang.partners(user, bot.username, user.referral)
         bot.send_message(
             chat_id=user.chat_id,
             text=text,

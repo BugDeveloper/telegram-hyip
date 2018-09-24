@@ -51,10 +51,18 @@ class User(AscensionModel):
     second_level_partners_deposit = peewee.FloatField(default=0)
     third_level_partners_deposit = peewee.FloatField(default=0)
     wallet = peewee.CharField(max_length=40, null=True, unique=True)
-    username = peewee.CharField(max_length=40)
+    username = peewee.CharField(max_length=40, null=True)
     first_name = peewee.CharField(max_length=40)
     last_name = peewee.CharField(max_length=40, null=True)
     created_at = DateTimeField(default=datetime.datetime.now())
+
+    def __str__(self):
+        text = f'{self.first_name}'
+        if self.last_name:
+            text = f'{text} {self.last_name}'
+        if self.username:
+            text = f'@{self.username}'
+        return text
 
     @hybrid_property
     def deposit_reward(self):
@@ -147,7 +155,7 @@ def on_save_handler(model_class, instance, created):
         if instance.referral:
             Dispatcher.get_instance().bot.send_message(
                 chat_id=instance.referral.chat_id,
-                text=f'По вашей ссылке зарегистрировался новый партнёр: {instance.username}'
+                text=f'По вашей ссылке зарегистрировался новый партнёр: {instance}'
             )
 
 
@@ -205,7 +213,7 @@ def on_save_handler(model_class, instance, created):
 
     Dispatcher.get_instance().bot.send_message(
         chat_id=to_user.chat_id,
-        text=lang.balance_transferred_from_user(amount, from_user.username),
+        text=lang.balance_transferred_from_user(amount, from_user),
     )
 
 

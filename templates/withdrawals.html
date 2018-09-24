@@ -29,8 +29,8 @@
     <tr>
     {% for withdrawal in withdrawals %}
         <td style="padding:0 15px 0 15px;">
-            <a href="https://telegram.me/{{ withdrawal.user.username }}">
-                {{ withdrawal.user.username }}
+            <a href="tg://user?id={{ withdrawal.user.chat_id }}">
+                {{ withdrawal.user }}
             </a>
         </td>
         <td style="padding:0 15px 0 15px;">{{ withdrawal.user.wallet }}</td>
