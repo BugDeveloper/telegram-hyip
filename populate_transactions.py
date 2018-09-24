@@ -2,12 +2,11 @@ import datetime
 from random import uniform
 from peewee import DoesNotExist
 import config
-import mq_bot
 from models import User, TopUp, Withdrawal, UserTransfer
 
 test_user = User.get(chat_id=config.test_user_id())
 try:
-    second_user = User.get(chat_id=1)
+    second_user = User.get(chat_id=228)
 except DoesNotExist:
     second_user = User.create(
                 chat_id=228,
@@ -19,7 +18,6 @@ except DoesNotExist:
 now = datetime.datetime.now()
 two_weeks_ago = now - datetime.timedelta(days=15)
 week_ago = now - datetime.timedelta(days=7)
-mq_bot.init()
 
 for i in range(5):
     top_up = TopUp.create(

@@ -311,10 +311,10 @@ def approve_withdrawal():
 @app.route('/withdrawals')
 @basic_auth.required
 def withdrawals():
-    withdrawals = Withdrawal.select(Withdrawal, User)\
+    withdrawals = Withdrawal.select(Withdrawal, User) \
         .where(Withdrawal.approved == False).order_by(Withdrawal.created_at).join(User)
 
-    total_sum = Withdrawal.select(fn.COALESCE(fn.SUM(Withdrawal.amount), 0).alias('total_sum'))\
+    total_sum = Withdrawal.select(fn.COALESCE(fn.SUM(Withdrawal.amount), 0).alias('total_sum')) \
         .where(Withdrawal.approved == False).execute()
 
     return render_template(
@@ -332,6 +332,21 @@ def lost_top_ups():
     return render_template(
         'lost_top_ups.html',
         lost_top_ups=lost_top_ups
+    )
+
+
+@app.route('/delete_top_up', methods=['DELETE'])
+@basic_auth.required
+def top_up_delete():
+    json_request = request.get_json(silent=True)
+    id = json_request['id']
+    top_up = TopUp.get(id=id)
+    top_up.delete_instance()
+
+    return Response(
+        response='Успешно',
+        status=200,
+        mimetype='application/json'
     )
 
 

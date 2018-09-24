@@ -27,10 +27,32 @@
             <input id="username">
             <button type="button" onclick="receivedTopUp({{top_up.id}})">Зачислить</button>
         </td>
+        <td>
+            <button type="button" onclick="deleteTopUp({{top_up.id}})">Удалить</button>
+        </td>
     </tr>
   {% endfor %}
 </table>
 <script>
+
+    function deleteTopUp(id) {
+        $.ajax({
+          type: "DELETE",
+          url: "/delete_top_up",
+          dataType: 'text',
+          contentType: 'application/json',
+          data: JSON.stringify({
+                "id": id,
+            }),
+          success: function(msg) {
+                alert("Успех");
+                window.location.reload();
+          },
+          error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert('Ошибка: ' + XMLHttpRequest.responseText);
+          }
+        });
+    }
 
     function receivedTopUp(id) {
         var username = document.getElementById('username').value
@@ -51,7 +73,6 @@
                 alert('Ошибка: ' + XMLHttpRequest.responseText);
           }
         });
-
     }
 </script>
 </body>
