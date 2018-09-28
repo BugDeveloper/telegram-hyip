@@ -365,8 +365,11 @@ def user_lookup():
     page = request.args.get('page')
     id = request.args.get('id')
     username = request.args.get('username')
-    if not page:
+    try:
+        page = int(page)
+    except (ValueError, TypeError):
         page = 1
+
     users = User.select()
     users_count = users.count()
     if id:
