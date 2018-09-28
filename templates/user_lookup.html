@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div  style="text-align:center">
-
-    <form action="/user_lookup">
+<form action="/user_lookup">
   <label>Id</label><br>
   <input type="text" name="id">
   <br>
@@ -67,7 +66,7 @@
         <td style="padding:0 15px 0 15px;">{{ user.chat_id }}</td>
         <td style="padding:0 15px 0 15px;">{{ user.username }}</td>
             <td style="padding:0 15px 0 15px;">
-                <a href="/user_lookup?id={{user.chat_id}}">
+                <a href="tg://user?id={{user.chat_id}}">
                     {{ user.first_name }}
                 </a>
             </td>
