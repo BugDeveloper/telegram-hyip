@@ -18,7 +18,7 @@ import config
 import error_handlers
 import input_handlers
 import mq_bot
-from job_callbacks import reward_users
+from job_callbacks import reward_users, notify_inactive_users
 from models import User, TopUp, Withdrawal
 from flask_basicauth import BasicAuth
 
@@ -153,6 +153,8 @@ dispatcher.add_error_handler(error_handlers.error_callback)
 
 j = updater.job_queue
 j.run_daily(reward_users, time=datetime.time(hour=3))
+# MAKE NOT DAILY
+j.run_daily(notify_inactive_users, time=datetime.time(hour=14))
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -161,7 +163,7 @@ logging.basicConfig(
 
 PRIVATE_SSH = '../keys/private.key'
 CERT_SSH = '../keys/cert.pem'
-REAL_TOKEN = '../token.txt'
+# REAL_TOKEN = '../token.txt'
 
 token = config.token()
 

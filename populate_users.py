@@ -1,12 +1,8 @@
 import datetime
-
 from peewee import DoesNotExist
-
 import config
-import mq_bot
 from models import User
 
-mq_bot.init()
 
 now = datetime.datetime.now()
 two_weeks_ago = now - datetime.timedelta(days=15)

@@ -217,7 +217,6 @@ class MainMenu:
             chat_id=user.chat_id,
             text=lang.help()
         )
-        # TODO Erase
         return bot_states.MAIN
 
 

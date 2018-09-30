@@ -1,4 +1,4 @@
-from decimal import Decimal
+import datetime
 import config
 import tariffs
 from models import User
@@ -33,5 +33,21 @@ def reward_users(bot, job):
                  f'Депозит: {deposit_reward:.7f} ETH\n'
                  f'1 уровень: {first_level_reward:.7f} ETH\n'
                  f'2 уровень: {second_level_reward:.7f} ETH\n'
-                 f'3 уровень: {third_level_reward:.7f} ETH\n'
+                 f'3 уровень: {third_level_reward:.7f} ETH'
+        )
+
+
+def notify_inactive_users(bot, job):
+    four_days_ago = datetime.datetime.now() - datetime.timedelta(days=4)
+    inactive_users = User.select(User.chat_id).where(
+        (User.created_at < four_days_ago) & (User.deposit < tariffs.eth_minimal_deposit())
+    )
+
+    text = f'Мы видим, что вы ещё не начали зарабатывать с нами.\n' \
+           f'Если у вас есть вопросы - напишите нам в техподдержку и мы поможем:\n' \
+           f'{config.get_support_account()}'
+    for user in inactive_users:
+        bot.send_message(
+            chat_id=user.chat_id,
+            text=text
         )
