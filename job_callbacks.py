@@ -38,7 +38,7 @@ def reward_users(bot, job):
 
 
 def notify_inactive_users(bot, job):
-    four_days_ago = datetime.datetime.now() - datetime.timedelta(days=4)
+    four_days_ago = datetime.datetime.now() - datetime.timedelta(days=2)
     inactive_users = User.select(User.chat_id).where(
         (User.created_at < four_days_ago) & (User.deposit < tariffs.eth_minimal_deposit())
     )
