@@ -95,9 +95,11 @@ def wallet_successfully_set(wallet):
 def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
     text = f'Депозит: {user_deposit:.7f} ETH. \n'
 
-    text += f'Баланс: {user_balance:.7f} ETH. \n' \
-            f'Процентная ставка: {user_reward * 100}% в день.\n' \
-            f'Начальный депозит: {tariffs.eth_minimal_deposit()} ETH\n' \
+    if user_deposit >= tariffs.eth_minimal_deposit():
+        text += f'Баланс: {user_balance:.7f} ETH. \n' \
+                f'Процентная ставка: {user_reward * 100}% в день.\n' \
+
+    text += f'Начальный депозит: {tariffs.eth_minimal_deposit()} ETH\n' \
             'Перевод из баланса в депозит: /transfer_deposit.\n' \
             'Перевод баланса пользователю: /transfer_user.'
     return text

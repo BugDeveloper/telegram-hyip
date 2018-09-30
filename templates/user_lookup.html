@@ -13,6 +13,9 @@
 
 </div>
 <br>
+<b>
+    Total users: {{ users_count }}
+</b>
 <table style="max-width: 1500px; margin: auto;">
     <tr>
         <td style="padding:0 15px 0 15px;">
@@ -66,9 +69,7 @@
         <td style="padding:0 15px 0 15px;">{{ user.chat_id }}</td>
         <td style="padding:0 15px 0 15px;">{{ user.username }}</td>
             <td style="padding:0 15px 0 15px;">
-                <a href="tg://user?id={{user.chat_id}}">
-                    {{ user.first_name }}
-                </a>
+                {{ user.first_name }}
             </td>
         <td style="padding:0 15px 0 15px;">{{ user.last_name }}</td>
         <td style="padding:0 15px 0 15px;">{{ "%.7f" % user.deposit }}</td>

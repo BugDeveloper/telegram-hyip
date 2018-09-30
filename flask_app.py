@@ -381,7 +381,7 @@ def user_lookup():
     if username:
         users = users.where(User.username.contains(username))
 
-    users = users.order_by(-User.chat_id).paginate(page, ITEMS_PER_PAGE)
+    users = users.order_by(-User.created_at).paginate(page, ITEMS_PER_PAGE)
 
     if (page + 1) * ITEMS_PER_PAGE - users_count > ITEMS_PER_PAGE:
         next_link = None
@@ -396,6 +396,7 @@ def user_lookup():
     return render_template(
         'user_lookup.html',
         users=users,
+        users_count=users_count,
         next_link=next_link,
         prev_link=prev_link
     )

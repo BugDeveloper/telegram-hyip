@@ -88,6 +88,12 @@ def partners_excel(bot, user):
         if not row == 0:
             row += 2
         worksheet.write(row, 0, f'{level_number + 1} реферальный уровень', bold)
+        if level_number == 0:
+            worksheet.write(row, 2, user.first_level_partners_deposit, bold)
+        elif level_number == 1:
+            worksheet.write(row, 2, user.second_level_partners_deposit, bold)
+        elif level_number == 2:
+            worksheet.write(row, 2, user.third_level_partners_deposit, bold)
         row += 1
         col = 0
         for field in cols.keys():
