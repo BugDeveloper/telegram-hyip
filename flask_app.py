@@ -154,7 +154,7 @@ dispatcher.add_error_handler(error_handlers.error_callback)
 j = updater.job_queue
 j.run_daily(reward_users, time=datetime.time(hour=3))
 # MAKE NOT DAILY
-j.run_daily(notify_inactive_users, time=datetime.time(hour=14))
+# j.run_daily(notify_inactive_users, time=datetime.time(hour=14))
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
