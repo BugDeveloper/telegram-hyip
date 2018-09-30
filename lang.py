@@ -97,18 +97,18 @@ def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
 
     if user_deposit >= tariffs.eth_minimal_deposit():
         text += f'Баланс: {user_balance:.7f} ETH. \n' \
-                f'Процентная ставка: {user_reward * 100}% в день.\n' \
-
-    text += f'Начальный депозит: {tariffs.eth_minimal_deposit()} ETH\n' \
-            'Перевод из баланса в депозит: /transfer_deposit.\n' \
+                f'Процентная ставка: {user_reward * 100}% в день.\n'
+    else:
+        text += f'Начальный депозит: {tariffs.eth_minimal_deposit()} ETH\n'
+    text += 'Перевод из баланса в депозит: /transfer_deposit.\n' \
             'Перевод баланса пользователю: /transfer_user.'
     return text
 
 
 def top_up(wallet):
     return f'Ваш кошелёк: {wallet}\n' \
-           'Изменить адрес ETH кошелька: /wallet.\n'\
-            f'ETH адрес для пополнения депозита: '
+           'Изменить адрес ETH кошелька: /wallet.\n' \
+           f'ETH адрес для пополнения депозита: '
 
 
 def top_up_invest_wallet():
