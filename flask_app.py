@@ -88,7 +88,7 @@ create_folder(transactions)
 
 q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
 tel_request = TelegramRequest(con_pool_size=8)
-mq_bot = mq_bot.MQBot(token=config.test_token(), request=tel_request, mqueue=q)
+mq_bot = mq_bot.MQBot(token=config.token(), request=tel_request, mqueue=q)
 
 updater = telegram.ext.updater.Updater(
     bot=mq_bot,
@@ -163,18 +163,13 @@ PRIVATE_SSH = '../keys/private.key'
 CERT_SSH = '../keys/cert.pem'
 REAL_TOKEN = '../token.txt'
 
-if Path(REAL_TOKEN).is_file():
-    with open(REAL_TOKEN) as f: token = f.read()
-    print('Token loaded from file')
-else:
-    token = config.test_token()
-    print('Test token used')
+token = config.token()
 
 if Path(PRIVATE_SSH).is_file() and Path(CERT_SSH).is_file():
     updater.start_webhook(
         listen='0.0.0.0',
         port=8443,
-        url_path=config.test_token(),
+        url_path=config.token(),
         key=PRIVATE_SSH,
         cert=CERT_SSH,
         webhook_url=f'https://167.99.218.143:8443/{token}'
