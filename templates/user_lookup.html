@@ -55,6 +55,21 @@
         </td>
         <td style="padding:0 15px 0 15px;">
             <b>
+                First level
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Second level
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
+                Third level
+            </b>
+        </td>
+        <td style="padding:0 15px 0 15px;">
+            <b>
                 Referral
             </b>
         </td>
@@ -75,6 +90,9 @@
         <td style="padding:0 15px 0 15px;">{{ "%.7f" % user.deposit }}</td>
         <td style="padding:0 15px 0 15px;">{{ "%.7f" %  user.balance }}</td>
         <td style="padding:0 15px 0 15px;">{{ user.wallet }}</td>
+        <td style="padding:0 15px 0 15px;">{{ "%.7f" % user.first_level_partners_deposit }}</td>
+        <td style="padding:0 15px 0 15px;">{{ "%.7f" % user.second_level_partners_deposit }}</td>
+        <td style="padding:0 15px 0 15px;">{{ "%.7f" % user.third_level_partners_deposit }}</td>
         <td style="padding:0 15px 0 15px;">
             {% if user.referral %}
             <a href="/user_lookup?id={{user.referral.chat_id}}">
