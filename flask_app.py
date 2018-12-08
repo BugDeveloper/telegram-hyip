@@ -34,8 +34,8 @@ _ETH_WEI = 1000000000000000000
 _SUBSCRIPTION_KEY = b'5c8ed1ecf105f564d5e03f9d380ccf16f34411a88a972d5a81ae4d976f1debfa'
 
 # curl -sd '{"event": "tx-confirmation", "address": "6cc5f688a315f3dc28a7781717a9a798a59fda7b", "url": "http://188.166.68.132:8000/confirmed_transaction"}' https://api.blockcypher.com/v1/eth/main/hooks?token=a521f0b32b984e03a3e5693ad296d4ca
-# 0x6cc5f688a315f3dc28a7781717a9a798a59fda7b
-# c5beef03aaa9548210b5550a62f7756efaa08ba3
+# curl -X DELETE -Is https://api.blockcypher.com/v1/eth/main/hooks/c4db96ff-aad7-4f1e-a702-0a82eafea17b?token=a521f0b32b984e03a3e5693ad296d4ca
+
 def loadData():
     try:
         f = open('backup/conversations', 'rb')
@@ -194,11 +194,11 @@ def is_signature_valid(signature, message, subscription_key):
 
 
 @app.route('/confirmed_transaction', methods=['POST'])
-@basic_auth.required
 def top_up_balance():
     data = request.get_json()
 
-    raise Exception(data)
+    print(data)
+
     return Response(
         response='Success',
         status=200,
