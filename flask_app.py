@@ -196,6 +196,13 @@ def is_signature_valid(signature, message, subscription_key):
 def top_up_balance():
     data = request.get_json()
 
+    print(data)
+    return Response(
+        response='Success',
+        status=200,
+        mimetype='application/json'
+    )
+
     message = request.get_data()
     signatures = request.headers.get('X-Ethercast-Signature')
     signature512 = signatures.split('; ')[1][7:]
