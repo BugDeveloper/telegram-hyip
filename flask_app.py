@@ -1,8 +1,8 @@
 import datetime
-import hmac
 import logging
 import os
 import pickle
+import requests
 from telegram.ext import messagequeue as mq
 import sys
 from pathlib import Path
@@ -28,15 +28,13 @@ basic_auth = BasicAuth(app)
 app.config['BASIC_AUTH_USERNAME'] = 'worst'
 app.config['BASIC_AUTH_PASSWORD'] = 'scumever'
 
-_SUCCESS_RESPONSE = {'status': 'ok'}
-_FAIL_RESPONSE = {'status': 'fail'}
 _ETH_WEI = 1000000000000000000
-_SUBSCRIPTION_KEY = b'5c8ed1ecf105f564d5e03f9d380ccf16f34411a88a972d5a81ae4d976f1debfa'
+_BLOCKCYPHER_KEY = 'a521f0b32b984e03a3e5693ad296d4ca'
+_HOOKS_API = f'https://api.blockcypher.com/v1/eth/main/hooks?token={_BLOCKCYPHER_KEY}'
+_DNSOMATIC = 'http://myip.dnsomatic.com'
 
-# curl -sd '{"event": "tx-confirmation", "address": "6cc5f688a315f3dc28a7781717a9a798a59fda7b", "url": "http://188.166.68.132:8000/confirmed_transaction"}' https://api.blockcypher.com/v1/eth/main/hooks?token=a521f0b32b984e03a3e5693ad296d4ca
-# curl -X DELETE -Is https://api.blockcypher.com/v1/eth/main/hooks/c4db96ff-aad7-4f1e-a702-0a82eafea17b?token=a521f0b32b984e03a3e5693ad296d4ca
 
-def loadData():
+def load_data():
     try:
         f = open('backup/conversations', 'rb')
         conv_handler.conversations = pickle.load(f)
@@ -183,53 +181,35 @@ else:
     updater.start_polling()
     print('Polling updater started')
 
-loadData()
+load_data()
 
 
-def is_signature_valid(signature, message, subscription_key):
-    enc_message = hmac.new(key=subscription_key, digestmod='sha512')
-    enc_message.update(message)
-    enc_message = enc_message.hexdigest()
-    return str(enc_message) == signature
+# {'block_hash': 'cc15dc9a9b2da45704573fbaec715a9623f1af821f375d171b43cdc774944219', 'block_height': 6848091, 'block_index': 31, 'hash': '527264b13a2202d1bf5171144ebed7aabe6ec40089570e74127ffa8e64a23415', 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b', 'f5e9558920ad4b05c4f5688337d64648b3a7b9b5'], 'total': 3189000000000000000, 'fees': 735000000000000, 'size': 114, 'gas_limit': 420000, 'gas_used': 21000, 'gas_price': 35000000000, 'confirmed': '2018-12-08T10:24:14Z', 'received': '2018-12-08T10:24:14Z', 'ver': 0, 'double_spend': False, 'vin_sz': 1, 'vout_sz': 1, 'confirmations': 1, 'inputs': [{'sequence': 541855, 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b']}], 'outputs': [{'value': 3189000000000000000, 'addresses': ['f5e9558920ad4b05c4f5688337d64648b3a7b9b5']}]}
+# {'block_hash': '2364f07ac862fabc49442d3a9cad488d98e702cceed39a0a8060bfdfb27d80c1', 'block_height': 6848095, 'block_index': 6, 'hash': 'e8d57293836f0ce0a82f768c163fdb72428f94c53a4213fdc4af600cac932a64', 'addresses': ['57dbe37d71f3a353858b2d5ff47c359a747729df', '6cc5f688a315f3dc28a7781717a9a798a59fda7b'], 'total': 11437000000000000000, 'fees': 735000000000000, 'size': 114, 'gas_limit': 420000, 'gas_used': 21000, 'gas_price': 35000000000, 'confirmed': '2018-12-08T10:24:56Z', 'received': '2018-12-08T10:24:56Z', 'ver': 0, 'double_spend': False, 'vin_sz': 1, 'vout_sz': 1, 'confirmations': 1, 'inputs': [{'sequence': 541856, 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b']}], 'outputs': [{'value': 11437000000000000000, 'addresses': ['57dbe37d71f3a353858b2d5ff47c359a747729df']}]}
 
 
 @app.route('/confirmed_transaction', methods=['POST'])
 def top_up_balance():
     data = request.get_json()
 
-    print(data)
-
-    return Response(
-        response='Success',
-        status=200,
-        mimetype='application/json'
-    )
-
     message = request.get_data()
-    signatures = request.headers.get('X-Ethercast-Signature')
-    signature512 = signatures.split('; ')[1][7:]
 
-    if not is_signature_valid(
-            signature=signature512,
-            message=message,
-            subscription_key=_SUBSCRIPTION_KEY
-    ):
-        return Response(
-            response='Nice try motherfucker',
-            status=400,
-            mimetype='application/json'
-        )
-
-    if data['to'].lower() != config.project_eth_address():
-        print('Something is really wrong with ethercast')
+    if data['outputs'][0]['addresses'][0].lower() != config.project_eth_address():
         return Response(
             response='Success',
-            status=400,
+            status=200,
             mimetype='application/json'
         )
 
-    amount = int(data['value'], 0) / _ETH_WEI
-    wallet = data['from'].lower()
+    amount = int(data['total'], 0) / _ETH_WEI
+    if not amount:
+        return Response(
+            response='Success',
+            status=200,
+            mimetype='application/json'
+        )
+
+    wallet = data['inputs'][0]['addresses'][0].lower()
 
     try:
         user = User.get(wallet=wallet)
@@ -251,9 +231,6 @@ def top_up_balance():
         mimetype='application/json'
     )
 
-
-# curl -d '{"value":"0x16337cf446e5fc80", "from":"0x32be343b94f860124dc4fee278fdcbd38c102d82"}' -H "Content-Type: application/json" -X POST http://167.99.218.143/confirmed_transaction
-# curl -d '{"to":"0x32Be343B94f860124dC4fEe278FDCBD38C102D88","value":"0x16337cf446e5fc80", "from":"0x32be343b94f860124dc4fee278fdcbd38c102d82"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/confirmed_transaction
 
 class ValidationError(Exception):
     pass
@@ -528,8 +505,44 @@ def statistics():
     )
 
 
+def transaction_hook_exists(json_data):
+    for hook in json_data:
+        if hook['address'] == config.project_eth_address()[2:]:
+            print('Webhook exists')
+            return True
+    return False
+
+
+def blockcypher_webhook():
+    hooks = requests.get(_HOOKS_API).json()
+    if transaction_hook_exists(hooks):
+        return True
+
+    print('Webhook doesn\'t exists')
+
+    f = requests.request('GET', _DNSOMATIC)
+    server_ip = f.text
+
+    response = requests.post(
+        _HOOKS_API,
+        data={
+            "event": "confirmed-tx",
+            "address": config.project_eth_address()[2:],
+            "url": f"http://{server_ip}:8000/confirmed_transaction"
+        }
+    )
+    if 'id' in response.json().keys():
+        print('Hook created successfully')
+        return True
+    else:
+        print('Hook error')
+        return False
+
+
 if __name__ == "__main__":
-    app.run(threaded=True, host='0.0.0.0', port=8000)
-    print('a')
-    stop_updater()
-    save_data()
+    if blockcypher_webhook():
+        app.run(threaded=True, host='0.0.0.0', port=8000)
+        stop_updater()
+        save_data()
+    else:
+        print('Terminating the app')
