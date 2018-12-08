@@ -184,8 +184,7 @@ else:
 load_data()
 
 
-# {'block_hash': 'cc15dc9a9b2da45704573fbaec715a9623f1af821f375d171b43cdc774944219', 'block_height': 6848091, 'block_index': 31, 'hash': '527264b13a2202d1bf5171144ebed7aabe6ec40089570e74127ffa8e64a23415', 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b', 'f5e9558920ad4b05c4f5688337d64648b3a7b9b5'], 'total': 3189000000000000000, 'fees': 735000000000000, 'size': 114, 'gas_limit': 420000, 'gas_used': 21000, 'gas_price': 35000000000, 'confirmed': '2018-12-08T10:24:14Z', 'received': '2018-12-08T10:24:14Z', 'ver': 0, 'double_spend': False, 'vin_sz': 1, 'vout_sz': 1, 'confirmations': 1, 'inputs': [{'sequence': 541855, 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b']}], 'outputs': [{'value': 3189000000000000000, 'addresses': ['f5e9558920ad4b05c4f5688337d64648b3a7b9b5']}]}
-# {'block_hash': '2364f07ac862fabc49442d3a9cad488d98e702cceed39a0a8060bfdfb27d80c1', 'block_height': 6848095, 'block_index': 6, 'hash': 'e8d57293836f0ce0a82f768c163fdb72428f94c53a4213fdc4af600cac932a64', 'addresses': ['57dbe37d71f3a353858b2d5ff47c359a747729df', '6cc5f688a315f3dc28a7781717a9a798a59fda7b'], 'total': 11437000000000000000, 'fees': 735000000000000, 'size': 114, 'gas_limit': 420000, 'gas_used': 21000, 'gas_price': 35000000000, 'confirmed': '2018-12-08T10:24:56Z', 'received': '2018-12-08T10:24:56Z', 'ver': 0, 'double_spend': False, 'vin_sz': 1, 'vout_sz': 1, 'confirmations': 1, 'inputs': [{'sequence': 541856, 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b']}], 'outputs': [{'value': 11437000000000000000, 'addresses': ['57dbe37d71f3a353858b2d5ff47c359a747729df']}]}
+# curl -H "Accept: application/json" -H "Content-type: application/json" -X POST -d {'block_hash': 'd3239321101cbd62307313c66af09755f825ef88adaca0b41e7fa6a6e4cf0a23', 'block_height': 6848079, 'block_index': 0, 'hash': '1b19036f4ad534daf281616a85bc12e1e60565aaac0c8a2996f46e0b20305a69', 'addresses': ['5ca9a71b1d01849c0a95490cc00559717fcf0d1d', '6cc5f688a315f3dc28a7781717a9a798a59fda7b'], 'total': 0, 'fees': 1305220000000000, 'size': 175, 'gas_limit': 420000, 'gas_used': 37292, 'gas_price': 35000000000, 'confirmed': '2018-12-08T10:21:33Z', 'received': '2018-12-08T10:21:33Z', 'ver': 0, 'double_spend': False, 'vin_sz': 1, 'vout_sz': 1, 'confirmations': 1, 'inputs': [{'sequence': 541846, 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b']}], 'outputs': [{'value': 0, 'script': 'a9059cbb000000000000000000000000f4d1d5560448e94273a743e7d159f04c7c63a26c0000000000000000000000000000000000000000000000360c2789aae8740000', 'addresses': ['be8C1eA54CFe0b8b0c227396C9e562507c024481']}]} 188.166.68.132:8000/confirmed_transaction
 
 
 @app.route('/confirmed_transaction', methods=['POST'])
@@ -199,7 +198,7 @@ def top_up_balance():
             mimetype='application/json'
         )
 
-    amount = int(data['total'], 0) / _ETH_WEI
+    amount = data['total'] / _ETH_WEI
     if not amount:
         return Response(
             response='Success',
