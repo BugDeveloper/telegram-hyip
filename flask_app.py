@@ -45,7 +45,7 @@ def loadData():
         logging.error(sys.exc_info()[0])
 
 
-def saveData():
+def save_data():
     resolved = dict()
     for k, v in conv_handler.conversations.items():
         if isinstance(v, tuple) and len(v) is 2 and isinstance(v[1], Promise):
@@ -62,6 +62,7 @@ def saveData():
         f.close()
     except:
         logging.error(sys.exc_info()[0])
+    print('=======================')
     print('CONVERSATION DATA SAVED')
 
 
@@ -520,5 +521,6 @@ def statistics():
 
 if __name__ == "__main__":
     app.run(threaded=True, host='0.0.0.0', port=8000)
+    print('a')
     stop_updater()
-    saveData()
+    save_data()
