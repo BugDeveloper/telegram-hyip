@@ -192,7 +192,7 @@ load_data()
 def top_up_balance():
     data = request.get_json()
 
-    if data['outputs'][0]['addresses'][0].lower() != config.project_eth_address():
+    if data['outputs'][0]['addresses'][0].lower() != config.project_eth_address()[2:]:
         return Response(
             response='Success',
             status=200,
@@ -206,8 +206,8 @@ def top_up_balance():
             status=200,
             mimetype='application/json'
         )
-
     wallet = data['inputs'][0]['addresses'][0].lower()
+    wallet = f'0x{wallet}'
 
     try:
         user = User.get(wallet=wallet)
