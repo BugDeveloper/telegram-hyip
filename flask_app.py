@@ -192,8 +192,6 @@ load_data()
 def top_up_balance():
     data = request.get_json()
 
-    message = request.get_data()
-
     if data['outputs'][0]['addresses'][0].lower() != config.project_eth_address():
         return Response(
             response='Success',
@@ -525,12 +523,13 @@ def blockcypher_webhook():
 
     response = requests.post(
         _HOOKS_API,
-        data={
+        json={
             "event": "confirmed-tx",
             "address": config.project_eth_address()[2:],
             "url": f"http://{server_ip}:8000/confirmed_transaction"
         }
     )
+
     if 'id' in response.json().keys():
         print('Hook created successfully')
         return True
