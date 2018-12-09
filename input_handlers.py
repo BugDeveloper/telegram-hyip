@@ -393,7 +393,7 @@ def _change_wallet(bot, update):
         return bot_states.MAIN
 
     wallet = update.message.text.lower()
-    if wallet[0:3] != '0x':
+    if wallet[0:2] != '0x':
         wallet = f'0x{wallet}'
 
     if not is_eth_address(wallet):
