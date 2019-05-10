@@ -143,4 +143,5 @@ def create_withdrawal(balance):
 
 
 def help():
-    return 'Разработал[ ](https://telegra.ph/ICO-DAY-09-14)[BugDeveloper](https://github.com/BugDeveloper)'
+    return 'Разработал[ ](https://telegra.ph/Dobro-pozhalovat-v-ICO-DAY-05-10)' \
+           '[BugDeveloper](https://github.com/BugDeveloper)'
