@@ -10,3 +10,5 @@ excel/transactions/
 docs/transactions/
 
 backup/conversations
+
+config\.json
