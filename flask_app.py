@@ -27,8 +27,6 @@ app = Flask(__name__)
 basic_auth = BasicAuth(app)
 
 _ETH_WEI = 1000000000000000000
-_BLOCKCYPHER_KEY = 'a521f0b32b984e03a3e5693ad296d4ca'
-_HOOKS_API = f'https://api.blockcypher.com/v1/eth/main/hooks?token={_BLOCKCYPHER_KEY}'
 _DNSOMATIC = 'http://myip.dnsomatic.com'
 
 
@@ -90,6 +88,12 @@ with open('config.json') as config_file:
     token = config_json['token']
     app.config['BASIC_AUTH_USERNAME'] = config_json['admin']['username']
     app.config['BASIC_AUTH_PASSWORD'] = config_json['admin']['password']
+    try:
+        blockcypher_key = config_json['blockcypher_key']
+    except KeyError:
+        blockcypher_key = ''
+
+HOOKS_API = f'https://api.blockcypher.com/v1/eth/main/hooks?token={blockcypher_key}'
 
 
 q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
@@ -517,7 +521,10 @@ def transaction_hook_exists(json_data):
 
 
 def blockcypher_webhook():
-    hooks = requests.get(_HOOKS_API).json()
+    if not blockcypher_key:
+        print('Running without blockcypher webhook. Transactions will not be recorded!')
+        return True
+    hooks = requests.get(HOOKS_API).json()
     if transaction_hook_exists(hooks):
         return True
 
@@ -527,7 +534,7 @@ def blockcypher_webhook():
     server_ip = f.text
 
     response = requests.post(
-        _HOOKS_API,
+        HOOKS_API,
         json={
             "event": "confirmed-tx",
             "address": config.project_eth_address()[2:],
