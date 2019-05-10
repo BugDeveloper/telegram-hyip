@@ -1,0 +1,7 @@
+{
+  "token": "YOUR TOKEN",
+  "admin": {
+    "username": "admin",
+    "password": "admin"
+  }
+}

@@ -11,20 +11,18 @@ def not_registered():
 
 
 def withdrawals(withdrawals_list):
-    if len(withdrawals_list) == 0:
+    if not len(withdrawals_list):
         return 'У вас пока нет выводов.'
     withdrawals = 'Ваши последние выводы:\n'
-    for index, withdrawal in enumerate(withdrawals_list):
-        withdrawals += f'{withdrawal.amount:.7f} ETH - {withdrawal.created_at}\n'
+    withdrawals += '\n'.join([f'{withdrawal.amount:.7f} ETH - {withdrawal.created_at}' for withdrawal in withdrawals_list])
     return withdrawals
 
 
 def top_ups(top_ups_list):
-    if len(top_ups_list) == 0:
+    if not len(top_ups_list):
         return 'У вас пока нет пополнений.'
     top_ups = 'Ваши последние пополнения:\n'
-    for top_up in top_ups_list:
-        top_ups += f'{top_up.amount:.7f} ETH - {top_up.created_at}\n'
+    top_ups += '\n'.join([f'{top_up.amount:.7f} ETH - {top_up.created_at}' for top_up in top_ups_list])
     return top_ups
 
 
@@ -145,4 +143,4 @@ def create_withdrawal(balance):
 
 
 def help():
-    return 'https://telegra.ph/ICO-DAY-09-14'
+    return 'Разработал[ ](https://telegra.ph/ICO-DAY-09-14)[BugDeveloper](https://github.com/BugDeveloper)'

@@ -11,6 +11,7 @@ from models import User, TopUp, Withdrawal, UserTransfer, DepositTransfer
 from eth_utils import is_address as is_eth_address
 from ban import Ban
 import tariffs
+from decorators import user_auth, back_button
 
 _partners_excel_query_time = {}
 _transactions_excel_query_time = {}
@@ -49,6 +50,7 @@ def notify_ban(bot, user_id, ban_hours):
     bot.send_message(chat_id=user_id, text=text)
 
 
+@user_auth
 def _main_menu(bot, update, user_data):
     user_id = update.message.chat_id
 
@@ -64,15 +66,12 @@ def _main_menu(bot, update, user_data):
         notify_ban(bot, user_id, ban_hours)
         return bot_states.MAIN
 
-    try:
-        user = User.get(chat_id=user_id)
-        username = update.message.from_user.username
-        if user.username != username:
-            user.username = username
-            user.save()
-    except DoesNotExist as e:
-        bot.send_message(user_id, lang.not_registered())
-        return bot_states.MAIN
+    user = bot.user
+
+    username = update.message.from_user.username
+    if user.username != username:
+        user.username = username
+        user.save()
 
     text = update.message.text
 
@@ -101,10 +100,11 @@ def user_request_excel_too_often(user_id, query_time):
     return False
 
 
+@user_auth
 def _callback(bot, update):
     query = update.callback_query
-    user_id = query.message.chat_id
-    user = User.get(chat_id=user_id)
+    user = bot.user
+    user_id = user.chat_id
 
     if query.data == 'partners_excel':
         if user_request_excel_too_often(user_id, _partners_excel_query_time):
@@ -181,15 +181,20 @@ class MainMenu:
     def top_up(bot, user):
         if user.wallet:
             text = lang.top_up(user.wallet)
+            import config
+            if config.DEBUG:
+                text += '\n/demo_top_up - пополнить счет в демо режиме'
             bot.send_message(
                 chat_id=user.chat_id,
                 text=text,
             )
+
             bot.send_message(
                 chat_id=user.chat_id,
                 text=lang.top_up_invest_wallet(),
                 parse_mode=telegram.ParseMode.MARKDOWN
             )
+
             return bot_states.MAIN
         else:
             text = lang.wallet_not_set() + '\n' + lang.enter_new_wallet()
@@ -215,7 +220,8 @@ class MainMenu:
     def help(bot, user):
         bot.send_message(
             chat_id=user.chat_id,
-            text=lang.help()
+            text=lang.help(),
+            parse_mode=telegram.ParseMode.MARKDOWN
         )
         return bot_states.MAIN
 
@@ -228,62 +234,54 @@ class NotEnoughBalance(Exception):
     pass
 
 
-def _validate_transaction(user, text):
+def _validate_transaction(user, text, demo=False):
     amount = float(text)
+    if demo:
+        return amount
     if amount < tariffs.minimal_eth_withdraw():
         raise LessThanMinimalWithdraw()
     if amount > user.balance:
-        raise NotEnoughBalance
-
+        raise NotEnoughBalance()
     return amount
 
 
+@user_auth
+@back_button
 def _transfer_balance_to_user(bot, update):
     text = update.message.text
-    chat_id = update.message.chat_id
-
-    if text == keyboards.MAIN_BUTTONS['back']:
-        bot.send_message(
-            chat_id=chat_id,
-            text=lang.back_to_main_menu(),
-            reply_markup=keyboards.main_keyboard()
-        )
-        return bot_states.MAIN
 
     transfer_data = text.split(' ')
 
     if len(transfer_data) != 2:
-        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
+        bot.send_message(chat_id=bot.chat_id, text=lang.invalid_input())
         return bot_states.TRANSFER_BALANCE_TO_USER
 
     username = transfer_data[0].lower()
 
-    user = User.get(chat_id=chat_id)
-
     try:
         user_to_transfer = User.get(fn.Lower(User.username) == username)
-        amount = _validate_transaction(user, transfer_data[1])
+        amount = _validate_transaction(bot.user, transfer_data[1])
     except ValueError:
-        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
+        bot.send_message(chat_id=bot.chat_id, text=lang.invalid_input())
         return bot_states.TRANSFER_BALANCE_TO_USER
     except LessThanMinimalWithdraw:
-        bot.send_message(chat_id=chat_id, text=lang.minimal_withdraw_amount())
+        bot.send_message(chat_id=bot.chat_id, text=lang.minimal_withdraw_amount())
         return bot_states.TRANSFER_BALANCE_TO_USER
     except NotEnoughBalance:
-        bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
+        bot.send_message(chat_id=bot.chat_id, text=lang.not_enough_eth())
         return bot_states.TRANSFER_BALANCE_TO_USER
     except DoesNotExist:
-        bot.send_message(chat_id=chat_id, text=lang.user_not_registered())
+        bot.send_message(chat_id=bot.chat_id, text=lang.user_not_registered())
         return bot_states.TRANSFER_BALANCE_TO_USER
 
     UserTransfer.create(
-        from_user=user,
+        from_user=bot.user,
         to_user=user_to_transfer,
         amount=amount,
     )
 
     bot.send_message(
-        chat_id=user.chat_id,
+        chat_id=bot.chat_id,
         text=lang.balance_transferred_to_user(amount, user_to_transfer.username),
         reply_markup=keyboards.main_keyboard()
     )
@@ -291,22 +289,14 @@ def _transfer_balance_to_user(bot, update):
     return bot_states.MAIN
 
 
+@user_auth
+@back_button
 def _transfer_balance_to_deposit(bot, update):
     text = update.message.text
-    chat_id = update.message.chat_id
-
-    if text == keyboards.MAIN_BUTTONS['back']:
-        bot.send_message(
-            chat_id=chat_id,
-            text=lang.back_to_main_menu(),
-            reply_markup=keyboards.main_keyboard()
-        )
-        return bot_states.MAIN
-
-    user = User.get(chat_id=chat_id)
+    chat_id = bot.chat_id
 
     try:
-        amount = _validate_transaction(user, text)
+        amount = _validate_transaction(bot.user, text)
     except ValueError:
         bot.send_message(chat_id=chat_id, text=lang.invalid_input())
         return bot_states.TRANSFER_BALANCE_TO_DEPOSIT
@@ -318,7 +308,7 @@ def _transfer_balance_to_deposit(bot, update):
         return bot_states.TRANSFER_BALANCE_TO_DEPOSIT
 
     DepositTransfer.create(
-        user=user,
+        user=bot.user,
         amount=amount
     )
 
@@ -330,36 +320,27 @@ def _transfer_balance_to_deposit(bot, update):
     return bot_states.MAIN
 
 
+@user_auth
+@back_button
 def _create_withdrawal(bot, update):
     text = update.message.text
-    chat_id = update.message.chat_id
-
-    if text == keyboards.MAIN_BUTTONS['back']:
-        bot.send_message(
-            chat_id=chat_id,
-            text=lang.back_to_main_menu(),
-            reply_markup=keyboards.main_keyboard()
-        )
-        return bot_states.MAIN
-
-    user = User.get(chat_id=chat_id)
 
     try:
-        amount = _validate_transaction(user, text)
+        amount = _validate_transaction(bot.user, text)
     except ValueError:
-        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
+        bot.send_message(chat_id=bot.chat_id, text=lang.invalid_input())
         return bot_states.CREATE_WITHDRAWAL
     except LessThanMinimalWithdraw:
-        bot.send_message(chat_id=chat_id, text=lang.minimal_withdraw_amount())
+        bot.send_message(chat_id=bot.chat_id, text=lang.minimal_withdraw_amount())
         return bot_states.CREATE_WITHDRAWAL
     except NotEnoughBalance:
-        bot.send_message(chat_id=chat_id, text=lang.not_enough_eth())
+        bot.send_message(chat_id=bot.chat_id, text=lang.not_enough_eth())
         return bot_states.CREATE_WITHDRAWAL
 
     try:
         not_approved_withdrawal = Withdrawal.get(approved=False)
         bot.send_message(
-            chat_id=chat_id,
+            chat_id=bot.chat_id,
             text=lang.not_approved_previous(not_approved_withdrawal.amount),
             reply_markup=keyboards.main_keyboard()
         )
@@ -368,13 +349,13 @@ def _create_withdrawal(bot, update):
         pass
 
     Withdrawal.create(
-        user=user,
+        user=bot.user,
         amount=amount
     )
 
     bot.send_message(
-        chat_id=user.chat_id,
-        text=lang.withdrawal_created(user.wallet),
+        chat_id=bot.chat_id,
+        text=lang.withdrawal_created(bot.user.wallet),
         reply_markup=keyboards.main_keyboard()
     )
 
@@ -382,44 +363,63 @@ def _create_withdrawal(bot, update):
 
 
 @run_async
+@user_auth
+@back_button
 def _change_wallet(bot, update):
-    chat_id = update.message.chat_id
-    if update.message.text == keyboards.MAIN_BUTTONS['back']:
-        bot.send_message(
-            chat_id=chat_id,
-            text=lang.back_to_main_menu(),
-            reply_markup=keyboards.main_keyboard()
-        )
-        return bot_states.MAIN
-
     wallet = update.message.text.lower()
     if wallet[0:2] != '0x':
         wallet = f'0x{wallet}'
 
     if not is_eth_address(wallet):
-        bot.send_message(chat_id=chat_id, text=lang.invalid_input())
+        bot.send_message(chat_id=bot.chat_id, text=lang.invalid_input())
         return bot_states.WALLET_CHANGE
     try:
         User.get(wallet=wallet)
-        bot.send_message(chat_id=chat_id, text=lang.eth_address_taken())
+        bot.send_message(chat_id=bot.chat_id, text=lang.eth_address_taken())
         return bot_states.WALLET_CHANGE
     except DoesNotExist:
         pass
 
-    user_id = update.message.chat_id
-    user = User.get(chat_id=user_id)
+    user = bot.user
     user.wallet = wallet.lower()
     user.save()
     bot.send_message(
-        chat_id=chat_id,
+        chat_id=bot.chat_id,
         text=lang.wallet_successfully_set(wallet),
-        reply_markup=keyboards.main_keyboard())
+        reply_markup=keyboards.main_keyboard()
+    )
     return bot_states.MAIN
 
 
 def callback_query_handler():
     callback_handler = CallbackQueryHandler(_callback)
     return callback_handler
+
+@run_async
+@user_auth
+@back_button
+def _demo_top_up(bot, update):
+    from models import TopUp
+    chat_id = bot.chat_id
+    text = update.message.text
+    user = bot.user
+    try:
+        amount = _validate_transaction(user, text, demo=True)
+    except ValueError:
+        bot.send_message(chat_id=chat_id, text='Инпут ерор)))))00')
+        return bot_states.DEMO_TOP_UP
+
+    top_up = TopUp.create(
+        user=user,
+        amount=amount,
+        from_wallet=user.wallet
+    )
+    bot.send_message(
+        chat_id=chat_id,
+        text=lang.back_to_main_menu(),
+        reply_markup=keyboards.main_keyboard()
+    )
+    return bot_states.MAIN
 
 
 def main_menu_input_handler():
@@ -462,10 +462,17 @@ def transfer_balance_to_user_input_handler():
     return handler
 
 
+def demo_top_up():
+    handler = MessageHandler(
+        Filters.text,
+        _demo_top_up
+    )
+    return handler
+
+
 def change_wallet_input_handler():
     wallet_handler = MessageHandler(
         Filters.text,
         _change_wallet
     )
-
     return wallet_handler

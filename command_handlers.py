@@ -3,6 +3,7 @@ from telegram.ext import CommandHandler, run_async
 import bot_states
 import keyboards
 import lang
+from decorators import user_auth
 from models import User
 
 
@@ -39,35 +40,21 @@ def _start_command(bot, update, args):
 
 
 @run_async
+@user_auth
 def _transfer_balance_to_deposit_command(bot, update):
-    chat_id = update.message.chat_id
-    try:
-        user = User.get(chat_id=chat_id)
-    except DoesNotExist:
-        bot.send_message(chat_id, lang.not_registered())
-        return bot_states.MAIN
     bot.send_message(
-        chat_id=chat_id,
-        text=lang.transfer_balance_to_deposit(user.balance),
+        chat_id=bot.chat_id,
+        text=lang.transfer_balance_to_deposit(bot.user.balance),
         reply_markup=keyboards.back_keyboard()
     )
     return bot_states.TRANSFER_BALANCE_TO_DEPOSIT
 
 
 @run_async
+@user_auth
 def _wallet_change_command(bot, update):
-    chat_id = update.message.chat_id
-    try:
-        user = User.get(chat_id=chat_id)
-    except DoesNotExist:
-        bot.send_message(
-            chat_id=chat_id,
-            text=lang.not_registered()
-        )
-        return bot_states.MAIN
-
     bot.send_message(
-        chat_id=chat_id,
+        chat_id=bot.chat_id,
         text=lang.enter_new_wallet(),
         reply_markup=keyboards.back_keyboard()
     )
@@ -75,36 +62,37 @@ def _wallet_change_command(bot, update):
 
 
 @run_async
+@user_auth
 def _transfer_balance_to_user(bot, update):
-    chat_id = update.message.chat_id
-    try:
-        user = User.get(chat_id=chat_id)
-    except DoesNotExist:
-        bot.send_message(chat_id, lang.not_registered())
-        return bot_states.MAIN
-
     bot.send_message(
-        chat_id=chat_id,
-        text=lang.transfer_balance_to_user(user.balance),
+        chat_id=bot.chat_id,
+        text=lang.transfer_balance_to_user(bot.user.balance),
         reply_markup=keyboards.back_keyboard()
     )
     return bot_states.TRANSFER_BALANCE_TO_USER
 
 
 @run_async
+@user_auth
 def _withdrawal_command(bot, update):
-    chat_id = update.message.chat_id
-    try:
-        user = User.get(chat_id=chat_id)
-    except DoesNotExist:
-        bot.send_message(chat_id, lang.not_registered())
-        return bot_states.MAIN
     bot.send_message(
-        chat_id=chat_id,
-        text=lang.create_withdrawal(user.balance),
+        chat_id=bot.chat_id,
+        text=lang.create_withdrawal(bot.user.balance),
         reply_markup=keyboards.back_keyboard()
     )
     return bot_states.CREATE_WITHDRAWAL
+
+
+@run_async
+@user_auth
+def _demo_top_up(bot, update):
+    bot.send_message(
+        chat_id=bot.chat_id,
+        text='Сколько?',
+        reply_markup=keyboards.back_keyboard()
+    )
+
+    return bot_states.DEMO_TOP_UP
 
 
 def transfer_balance_to_deposit():
@@ -129,4 +117,9 @@ def transfer_balance_to_user():
 
 def withdraw_command_handler():
     handler = CommandHandler('withdraw', _withdrawal_command)
+    return handler
+
+
+def demo_top_up():
+    handler = CommandHandler('demo_top_up', _demo_top_up)
     return handler

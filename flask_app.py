@@ -21,12 +21,10 @@ import mq_bot
 from job_callbacks import reward_users, notify_inactive_users
 from models import User, TopUp, Withdrawal
 from flask_basicauth import BasicAuth
+import json
 
 app = Flask(__name__)
 basic_auth = BasicAuth(app)
-
-app.config['BASIC_AUTH_USERNAME'] = 'worst'
-app.config['BASIC_AUTH_PASSWORD'] = 'scumever'
 
 _ETH_WEI = 1000000000000000000
 _BLOCKCYPHER_KEY = 'a521f0b32b984e03a3e5693ad296d4ca'
@@ -87,9 +85,16 @@ create_folder(docs)
 create_folder(partners)
 create_folder(transactions)
 
+with open('config.json') as config_file:
+    config_json = json.load(config_file)
+    token = config_json['token']
+    app.config['BASIC_AUTH_USERNAME'] = config_json['admin']['username']
+    app.config['BASIC_AUTH_PASSWORD'] = config_json['admin']['password']
+
+
 q = mq.MessageQueue(all_burst_limit=25, all_time_limit_ms=1017)
 tel_request = TelegramRequest(con_pool_size=8)
-mq_bot = mq_bot.MQBot(token=config.token(), request=tel_request, mqueue=q)
+mq_bot = mq_bot.MQBot(token=token, request=tel_request, mqueue=q)
 
 updater = telegram.ext.updater.Updater(
     bot=mq_bot,
@@ -102,6 +107,7 @@ withdraw_command_handler = command_handlers.withdraw_command_handler()
 start_command_handler = command_handlers.start_command_handler()
 transfer_balance_to_deposit_command_handler = command_handlers.transfer_balance_to_deposit()
 transfer_balance_to_user_command_handler = command_handlers.transfer_balance_to_user()
+demo_top_up_command_handler = command_handlers.demo_top_up()
 
 main_handler = input_handlers.main_menu_input_handler()
 change_wallet_handler = input_handlers.change_wallet_input_handler()
@@ -109,6 +115,8 @@ create_withdraw_input_handler = input_handlers.withdrawal_input_handler()
 transfer_balance_to_deposit_input_handler = input_handlers.transfer_balance_to_deposit_input_handler()
 transfer_balance_to_user_input_handler = input_handlers.transfer_balance_to_user_input_handler()
 callback_query_handler = input_handlers.callback_query_handler()
+demo_top_up_input_handler = input_handlers.demo_top_up()
+
 
 conv_handler = ConversationHandler(
     entry_points=[
@@ -122,7 +130,8 @@ conv_handler = ConversationHandler(
             change_wallet_command_handler,
             withdraw_command_handler,
             transfer_balance_to_deposit_command_handler,
-            transfer_balance_to_user_command_handler
+            transfer_balance_to_user_command_handler,
+            demo_top_up_command_handler
         ],
         bot_states.WALLET_CHANGE: [
             change_wallet_handler,
@@ -135,6 +144,9 @@ conv_handler = ConversationHandler(
         ],
         bot_states.TRANSFER_BALANCE_TO_USER: [
             transfer_balance_to_user_input_handler,
+        ],
+        bot_states.DEMO_TOP_UP: [
+            demo_top_up_input_handler
         ]
     },
     fallbacks=[
@@ -163,15 +175,12 @@ logging.basicConfig(
 
 PRIVATE_SSH = '../keys/private.key'
 CERT_SSH = '../keys/cert.pem'
-# REAL_TOKEN = '../token.txt'
-
-token = config.token()
 
 if Path(PRIVATE_SSH).is_file() and Path(CERT_SSH).is_file():
     updater.start_webhook(
         listen='0.0.0.0',
         port=8443,
-        url_path=config.token(),
+        url_path=token,
         key=PRIVATE_SSH,
         cert=CERT_SSH,
         webhook_url=f'https://167.99.218.143:8443/{token}'
@@ -182,9 +191,6 @@ else:
     print('Polling updater started')
 
 load_data()
-
-
-# curl -H "Accept: application/json" -H "Content-type: application/json" -X POST -d {'block_hash': 'd3239321101cbd62307313c66af09755f825ef88adaca0b41e7fa6a6e4cf0a23', 'block_height': 6848079, 'block_index': 0, 'hash': '1b19036f4ad534daf281616a85bc12e1e60565aaac0c8a2996f46e0b20305a69', 'addresses': ['5ca9a71b1d01849c0a95490cc00559717fcf0d1d', '6cc5f688a315f3dc28a7781717a9a798a59fda7b'], 'total': 0, 'fees': 1305220000000000, 'size': 175, 'gas_limit': 420000, 'gas_used': 37292, 'gas_price': 35000000000, 'confirmed': '2018-12-08T10:21:33Z', 'received': '2018-12-08T10:21:33Z', 'ver': 0, 'double_spend': False, 'vin_sz': 1, 'vout_sz': 1, 'confirmations': 1, 'inputs': [{'sequence': 541846, 'addresses': ['6cc5f688a315f3dc28a7781717a9a798a59fda7b']}], 'outputs': [{'value': 0, 'script': 'a9059cbb000000000000000000000000f4d1d5560448e94273a743e7d159f04c7c63a26c0000000000000000000000000000000000000000000000360c2789aae8740000', 'addresses': ['be8C1eA54CFe0b8b0c227396C9e562507c024481']}]} 188.166.68.132:8000/confirmed_transaction
 
 
 @app.route('/confirmed_transaction', methods=['POST'])
@@ -542,5 +548,6 @@ if __name__ == "__main__":
         app.run(threaded=True, host='0.0.0.0', port=8000)
         stop_updater()
         save_data()
+        sys.exit(0)
     else:
         print('Terminating the app')

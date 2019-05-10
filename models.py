@@ -5,10 +5,7 @@ from peewee import *
 from playhouse.hybrid import hybrid_property
 from playhouse.signals import post_save, pre_save
 from telegram.ext import Dispatcher
-
-import keyboards
 import lang
-import mq_bot
 import tariffs
 
 db = SqliteDatabase('ascension.db')
