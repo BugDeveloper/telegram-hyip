@@ -43,6 +43,8 @@ This project has been developed with weak python knowledge, so some parts of my 
 
 Before running the app you need to tweak two configs.
 
+- config.py stores some info which is accessed from different app parts.
+
 - config.json stores private information.
 
 ```
@@ -55,8 +57,6 @@ Before running the app you need to tweak two configs.
   "blockcypher_key": "YOUR BLOCKCYPHER TOKEN"
 }
 ```
-
-- config.py stores more public info.
 
 **To run** the app just run `python flask_app.py`.
 
