@@ -58,6 +58,16 @@ Before running the app you need to tweak two configs.
 }
 ```
 
+If you wanna use webhook instead of websockets you should place it like this.
+
+```
+...
+ |___telegram-hyip
+|___keys
+```
+
+Keys folder must be if the same place with the telegram-hyip project.
+
 **To run** the app just run `python flask_app.py`.
 
 **To shutdown** the app you can use `CTRL + C`, but make sure that it saved all conversation data before pressing `CTRL + C` again.
