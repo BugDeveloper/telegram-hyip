@@ -179,11 +179,13 @@ class MainMenu:
     @staticmethod
     @run_async
     def top_up(bot, user):
+        text = ''
+        import config
+        if config.DEBUG:
+            text = '/demo_top_up - пополнить счет в демо режиме\n'
+
         if user.wallet:
-            text = lang.top_up(user.wallet)
-            import config
-            if config.DEBUG:
-                text += '\n/demo_top_up - пополнить счет в демо режиме'
+            text += lang.top_up(user.wallet)
             bot.send_message(
                 chat_id=user.chat_id,
                 text=text,

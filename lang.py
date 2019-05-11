@@ -97,14 +97,14 @@ def deposit(user_deposit, user_balance, user_reward, sum_deposit_reward):
                 f'Процентная ставка: {user_reward * 100}% в день.\n'
     else:
         text += f'Начальный депозит: {tariffs.eth_minimal_deposit()} ETH\n'
-    text += 'Перевод из баланса в депозит: /transfer_deposit.\n' \
-            'Перевод баланса пользователю: /transfer_user.'
+    text += 'Перевод из баланса в депозит: /transfer_deposit\n' \
+            'Перевод баланса пользователю: /transfer_user'
     return text
 
 
 def top_up(wallet):
     return f'Ваш кошелёк: {wallet}\n' \
-           'Изменить адрес ETH кошелька: /wallet.\n' \
+           'Изменить адрес ETH кошелька: /wallet\n' \
            f'ETH адрес для пополнения депозита: '
 
 
@@ -114,8 +114,8 @@ def top_up_invest_wallet():
 
 def withdraw(wallet):
     return f'Ваш кошелёк: {wallet}.\n' \
-           'Изменить адрес ETH кошелька: /wallet .\n' \
-           'Вывод средств: /withdraw.'
+           'Изменить адрес ETH кошелька: /wallet\n' \
+           'Вывод средств: /withdraw'
 
 
 def wallet_not_set():
@@ -127,18 +127,18 @@ def enter_new_wallet():
 
 
 def transfer_balance_to_deposit(balance):
-    return f'Ваш баланс: {balance:.7f} ETH .\n' \
+    return f'Ваш баланс: {balance:.7f} ETH.\n' \
            'Введите сумму, которую хотите перевести в депозит:'
 
 
 def transfer_balance_to_user(balance):
-    return f'Ваш баланс: {balance:.7f} ETH .\n' \
+    return f'Ваш баланс: {balance:.7f} ETH.\n' \
            'Введите имя пользователя (алиас) Telegram и сумму которую хотите перевести через пробел.\n' \
            'Например: "ivan 1.03"'
 
 
 def create_withdrawal(balance):
-    return f'Ваш баланс: {balance:.7f} ETH .\n' \
+    return f'Ваш баланс: {balance:.7f} ETH.\n' \
            'Введите сумму, которую хотите вывести:'
 
 
