@@ -1,8 +1,8 @@
 # ICO DAY
 
-**Telegram Hyip Bot**
+[**Telegram Hyip Bot**](https://t.me/ico_day_bot)
 
-t.me/ico_day_bot
+[**Marketing Page**](https://telegra.ph/Dobro-pozhalovat-v-ICO-DAY-05-10)
 
 ![](https://telegra.ph/file/ebbd34f093f0afb72c6f5.jpg)
 
